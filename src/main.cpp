@@ -29,6 +29,8 @@ BME280<> BMESensor;
 const char* db_name = "sensor_data";
 const char* db_key = "55a438a31c8d7fc473acf2a6f1c4df60";
 
+const char* DEVICE_ID = "1";
+
 int counter = 0;
 
 const float ALPHA = 2.0 / (10 + 1); //Avg over 10 seconds
@@ -116,6 +118,19 @@ void sendDataToCorlysis(float temperature, float humidity, float pressure, int p
         Serial.println("Data were not sent. Check network connection.");
     }
     Serial.println("");  
+}
+
+void sendDataToBigQuery(float temp, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0) {
+    const char* functions_url = "https://us-central1-air-quality-weather.cloudfunctions.net/input-data-js";
+    char post_data[200];
+    sprintf(post_data, R"({"deviceID":"%s",temp":"%f","humidity":"%f","pressure":"%f","pm_1_0":"%d","pm_2_5":"%d","pm_10_0":"%d"})", 
+            DEVICE_ID, temp, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    Serial.println(post_data)
+}
+
+void sendData(float temperature, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0){
+    sendDataToCorlysis(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    sendDataToBigQuery(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
 }
 
 void setup()
