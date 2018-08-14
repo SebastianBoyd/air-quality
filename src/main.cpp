@@ -33,7 +33,7 @@ const char* DEVICE_ID = "1";
 
 int counter = 0;
 
-const float ALPHA = 2.0 / (10 + 1); //Avg over 10 seconds
+const float ALPHA = 2.0 / (60 + 1); //Avg over 60 seconds
 float AVG_PM_SP_UG_1_0;
 float AVG_PM_AE_UG_2_5;
 float AVG_PM_AE_UG_10_0;
@@ -52,15 +52,12 @@ float exp_avg(float acc, float new_val)
 }
 
 // Generates response for Info Request
-void sendInfo()
-{
-  String json = "{";
-  json += "\"PM 1.0\":" + String(data.PM_AE_UG_1_0) + ",";
-  json += "\"PM 2.5\":" + String(data.PM_AE_UG_2_5) + ",";
-  json += "\"PM 10.0\":" + String(data.PM_AE_UG_10_0);
-  json += "}";
-  server.send(200, "text/json", json);
-  json = String();
+String getJSON(float temp, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0)
+{ 
+    char data[200];
+    sprintf(data, R"({"deviceID":"%s","temp":%f,"humidity":%f,"pressure":%f,"pm_1_0":%d,"pm_2_5":%d,"pm_10_0":%d})", 
+            DEVICE_ID, temp, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    return String(data);
 }
 
 // Setup HTTP Server
@@ -73,7 +70,8 @@ void setupHttpServer()
     server.sendHeader("access-control-allow-credentials", "false");
     server.sendHeader("access-control-allow-headers", "x-requested-with");
     server.sendHeader("access-control-allow-methods", "GET,OPTIONS");
-    sendInfo();
+    String json_data = getJSON(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ, AVG_PM_SP_UG_1_0, AVG_PM_AE_UG_2_5, AVG_PM_AE_UG_10_0);
+    server.send(200, "text/json", "aq_data=" + String(json_data));
   });
   server.on("/json", HTTP_OPTIONS, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
@@ -122,15 +120,13 @@ void sendDataToCorlysis(float temperature, float humidity, float pressure, int p
 
 void sendDataToBigQuery(float temp, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0) {
     const char* functions_url = "https://us-central1-air-quality-weather.cloudfunctions.net/input-data-js";
-    char post_data[200];
-    sprintf(post_data, R"({"deviceID":"%s",temp":"%f","humidity":"%f","pressure":"%f","pm_1_0":"%d","pm_2_5":"%d","pm_10_0":"%d"})", 
-            DEVICE_ID, temp, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
-    Serial.println(post_data)
+    String post_data = getJSON(temp, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    Serial.println(post_data);
 }
 
 void sendData(float temperature, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0){
     sendDataToCorlysis(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
-    sendDataToBigQuery(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    //sendDataToBigQuery(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
 }
 
 void setup()
