@@ -41,7 +41,21 @@ float AVG_TEMPRATURE;
 float AVG_HUMIDITY; 
 float AVG_PRESSURE_ADJ; 
 
-//template <typename T>
+class Log {
+    public:
+
+    String log_file;
+
+    void print(String out) {
+        Serial.print(out);
+    };
+
+    void println(String out) {
+        print(out + "\n");
+    }
+
+};
+
 float exp_avg(float acc, float new_val)
 {
     if (acc)

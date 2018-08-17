@@ -13,6 +13,9 @@
             <div id="aqi-container" class="center" style="text-align: center">
                 <span id="aqi_name"></span>
                 <span id="aqi"></span>
+                <div class="meter">
+                    <div style="width: 25%" id="percent"></div>
+                </div>
             </div>
             <h3>Particulate Matter</h3>
             <table>
@@ -35,6 +38,11 @@
                     <td>Temperature</td>
                     <td>
                         <span id="temp"></span> &deg;C</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <span id="temp-f"></span> &deg;F</td>
                 </tr>
                 <tr>
                     <td>Humidity</td>
@@ -82,6 +90,26 @@
             border-radius: 16px;
             max-width: 400px;
             width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .meter { 
+            height: 12px;
+            margin-top: 4px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.11);
+            width: calc(100% + 32px);
+            padding: 0px;
+            box-sizing: border-box;
+            margin-left: -16px;
+            margin-bottom: -16px;
+        }
+        .meter > div {
+            display: block;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            position: relative;
         }
     </style>
     <script>
@@ -142,37 +170,56 @@
                 AQI = "PM10message";
             }
             return AQI;
-        }   
+        }
+        function AQIpercent(AQI, rangeStart, rangeEnd) {
+            return (AQI - rangeStart) / (rangeEnd - rangeStart) * 100;
+        }
 
         function AQItoDesc(AQI) {
             data = {}
             if (AQI <= 25) {
                 data.text = "Very Good";
                 data.color = "#2196f3";
+                data.percent = AQIpercent(AQI, 0, 25);
             } else if (AQI <= 50) {
                 data.text = "Good";
                 data.color = "#4caf50";
+                data.percent = (AQI - 25) / 50.0;
+                data.percent = AQIpercent(AQI, 25, 50);
             } else if (AQI <= 100) {
                 data.text = "Moderate";
                 data.color = "#f9a825";
+                data.percent = (AQI - 50) / (100.0 - 50);
+                data.percent = AQIpercent(AQI, 50, 100);
             } else if (AQI <= 150) {
                 data.text = "Unhealthy for Sensitive Groups";
                 data.color = "#ff5722";
+                data.percent = (AQI - 100) / 150.0;
+                data.percent = AQIpercent(AQI, 100, 150);
             } else if (AQI <= 200) {
                 data.text = "Unhealthy";
                 data.color = "#ed2f21";
+                data.percent = (AQI - 150) / 200.0;
+                data.percent = AQIpercent(AQI, 150, 200);
             } else if (AQI <= 300) {
                 data.text = "Very Unhealthy";
                 data.color = "#9c27b0";
+                data.percent = (AQI - 200) / 300.0;
+                data.percent = AQIpercent(AQI, 200, 300);
             } else if (AQI <= 400) {
                 data.text = "Hazardous";
                 data.color = "#B22222";
+                data.percent = (AQI - 300) / 400.0;
+                data.percent = AQIpercent(AQI, 300, 400);
             } else if (AQI <= 500) {
                 data.text = "Super Hazardous";
                 data.color = "#800000";
+                data.percent = (AQI - 400) / 500.0;
+                data.percent = AQIpercent(AQI, 400, 500);
             } else {
                 data.text = "Apocalyptic";
                 data.color = "#000000";
+                data.percent = 100;
             }
             return data;
 
@@ -184,13 +231,14 @@
         document.getElementById("aqi").innerHTML = aqi;
         document.getElementById("aqi_name").innerHTML = aqi_desc.text;
         document.getElementById("aqi-container").style.backgroundColor = aqi_desc.color;
+        document.getElementById("percent").style.width = aqi_desc.percent + '%';
         document.getElementById("pm_1_0").innerHTML = aq_data.pm_1_0;
         document.getElementById("pm_2_5").innerHTML = aq_data.pm_2_5;
         document.getElementById("pm_10_0").innerHTML = aq_data.pm_10_0;
         document.getElementById("temp").innerHTML = aq_data.temp.toFixed(2);
-        //document.getElementById("temp_f").innerHTML = (aq_data.temp * 1.8 + 32).toFixed(2);
-        document.getElementById("humidity").innerHTML = aq_data.humidity.toFixed(2);;
-        document.getElementById("pressure").innerHTML = aq_data.pressure.toFixed(2);;
+        document.getElementById("temp-f").innerHTML = (aq_data.temp * 1.8 + 32).toFixed(2);
+        document.getElementById("humidity").innerHTML = aq_data.humidity.toFixed(2);
+        document.getElementById("pressure").innerHTML = aq_data.pressure.toFixed(2);
     </script>
 </body>
 
