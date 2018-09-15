@@ -41,21 +41,6 @@ float AVG_TEMPRATURE;
 float AVG_HUMIDITY; 
 float AVG_PRESSURE_ADJ; 
 
-class Log {
-    public:
-
-    String log_file;
-
-    void print(String out) {
-        Serial.print(out);
-    };
-
-    void println(String out) {
-        print(out + "\n");
-    }
-
-};
-
 float exp_avg(float acc, float new_val)
 {
     if (acc)
@@ -139,7 +124,7 @@ void sendDataToBigQuery(float temp, float humidity, float pressure, int pm_1_0, 
 }
 
 void sendData(float temperature, float humidity, float pressure, int pm_1_0, int pm_2_5, int pm_10_0){
-    sendDataToCorlysis(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
+    //sendDataToCorlysis(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
     //sendDataToBigQuery(temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
 }
 
@@ -149,6 +134,7 @@ void setup()
     Serial.begin(9600);  // GPIO2 (D4 pin on ESP-12E Development Board)
     Serial.println("\nStarting...");
     Serial.setDebugOutput(true);
+    //WiFi.disconnect();
     wifiManager.autoConnect("Air-Quality");
     setupHttpServer();
     Serial.println("IP address: ");
@@ -204,7 +190,7 @@ void loop()
     {   
         counter = 0;
         Serial.println("SEND DATA");
-        sendDataToCorlysis(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ, round(AVG_PM_SP_UG_1_0), round(AVG_PM_AE_UG_2_5), round(AVG_PM_AE_UG_10_0));
+        //sendDataToCorlysis(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ, round(AVG_PM_SP_UG_1_0), round(AVG_PM_AE_UG_2_5), round(AVG_PM_AE_UG_10_0));
     }
   }
   server.handleClient();
