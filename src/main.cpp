@@ -1,4 +1,6 @@
-//#include <Arduino.h>
+#include <Arduino.h>
+#include <time.h>
+#include <WiFiClientSecure.h>
 #include <ESP8266WiFi.h>
 #include <DNSServer.h>            //Local DNS Server used for redirecting all requests to the configuration portal
 #include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
@@ -9,10 +11,19 @@
 #include "PMS.h"
 #include <BME280_t.h>
 #include <stdio.h>
+#include "ESP8266httpUpdate.h"
+#include <TaskScheduler.h>
 
 #define ASCII_ESC 27
 
 #define MYALTITUDE  118
+
+extern const unsigned char DSTRootCAX3_crt[] PROGMEM;
+extern const unsigned int DSTRootCAX3_crt_len;
+
+const char* update_host = "air.sebastianboyd.com";
+const char* update_url = "/firmware-latest.bin";
+const int httpsPort = 443;
 
 WiFiManager wifiManager;
 
@@ -25,6 +36,8 @@ HTTPClient http;
 char bufout[10];
 
 BME280<> BMESensor;
+
+WiFiClientSecure https;
 
 const char* db_name = "sensor_data";
 const char* db_key = "55a438a31c8d7fc473acf2a6f1c4df60";
@@ -40,6 +53,33 @@ float AVG_PM_AE_UG_10_0;
 float AVG_TEMPRATURE;
 float AVG_HUMIDITY; 
 float AVG_PRESSURE_ADJ; 
+
+void check_update()
+{
+    Serial.print("connecting to ");
+    Serial.println(update_host);
+    if (!https.connect(update_host, httpsPort)) {
+        Serial.println("connection failed");
+        return;
+    }
+
+    // Verify validity of server's certificate
+    if (https.verifyCertChain(update_host)) {
+        Serial.println("Server certificate verified");
+    } else {
+        Serial.println("ERROR: certificate verification failed!");
+        return;
+    }
+
+    Serial.print("Starting OTA from: ");
+    Serial.print(update_host);
+    Serial.println(update_url);
+
+    auto ret = ESPhttpUpdate.update(https, update_host, update_url);
+    // if successful, ESP will restart
+    Serial.println("update failed");
+    Serial.println((int) ret);
+}
 
 float exp_avg(float acc, float new_val)
 {
@@ -139,6 +179,31 @@ void setup()
     setupHttpServer();
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+
+    // Synchronize time useing SNTP
+    Serial.print("Setting time using SNTP");
+    configTime(8 * 3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {
+        delay(500);
+        Serial.print(".");
+        now = time(nullptr);
+    }
+    Serial.println("");
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.print("Current time: ");
+    Serial.print(asctime(&timeinfo));
+
+    // Load root certificate in DER format into WiFiClientSecure object
+    bool res = https.setCACert_P(DSTRootCAX3_crt, DSTRootCAX3_crt_len);
+    if (!res) {
+        Serial.println("Failed to load root CA certificate!");
+        while (true) {
+        yield();
+        }
+    }
+
     Wire.begin();                                                      // initialize I2C that connects to sensor
     BMESensor.begin();  
 }
