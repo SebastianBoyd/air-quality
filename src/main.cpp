@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include "ESP8266httpUpdate.h"
 #include <TaskScheduler.h>
+#include "CAcerts.h"
 
 #define ASCII_ESC 27
 
@@ -75,10 +76,10 @@ void check_update()
     Serial.print(update_host);
     Serial.println(update_url);
 
-    auto ret = ESPhttpUpdate.update(https, update_host, update_url);
+    //auto ret = ESPhttpUpdate.update(https, update_host, update_url);
     // if successful, ESP will restart
-    Serial.println("update failed");
-    Serial.println((int) ret);
+    //Serial.println("update failed");
+    //Serial.println((int) ret);
 }
 
 float exp_avg(float acc, float new_val)
