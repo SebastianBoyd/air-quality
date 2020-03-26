@@ -1,4 +1,4 @@
-3// Copyright 2019 Sebastian Boyd
+// Copyright 2019 Sebastian Boyd
 #include <Arduino.h>
 #include <Wire.h>
 #include <BME280_t.h>
