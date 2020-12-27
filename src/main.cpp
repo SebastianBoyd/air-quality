@@ -15,6 +15,7 @@
 #include "CAcerts.h"
 #include "ESP8266httpUpdate.h"
 #include "PMS.h"
+#include <ArduinoOTA.h>
 
 #define ASCII_ESC 27
 
@@ -57,32 +58,6 @@ float AVG_TEMPRATURE;
 float AVG_HUMIDITY;
 float AVG_PRESSURE_ADJ;
 
-void check_update() {
-  Serial.print("connecting to ");
-  Serial.println(update_host);
-  if (!https.connect(update_host, httpsPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-
-  // Verify validity of server's certificate
-  if (https.verifyCertChain(update_host)) {
-    Serial.println("Server certificate verified");
-  } else {
-    Serial.println("ERROR: certificate verification failed!");
-    return;
-  }
-
-  Serial.print("Starting OTA from: ");
-  Serial.print(update_host);
-  Serial.println(update_url);
-
-  // auto ret = ESPhttpUpdate.update(https, update_host, update_url);
-  // if successful, ESP will restart
-  // Serial.println("update failed");
-  // Serial.println((int) ret);
-}
-
 float exp_avg(float acc, float new_val) {
   if (acc) {
     return (ALPHA * new_val) + (1.0 - ALPHA) * acc;
@@ -122,87 +97,6 @@ void setupHttpServer() {
     server.sendHeader("access-control-allow-methods", "GET,OPTIONS");
     server.send(204);
   });
-}
-
-void sendDataToCorlysis(float temperature, float humidity, float pressure,
-                        int pm_1_0, int pm_2_5, int pm_10_0) {
-  static long counter = 0;
-
-  char payloadStr[150];
-  sprintf(
-      payloadStr,
-      "bme280_data "
-      "temperature=%f,humidity=%f,pressure=%f,pm_1_0=%d,pm_2_5=%d,pm_10_0=%d",
-      temperature, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
-  Serial.println(payloadStr);
-
-  char corlysisUrl[200];
-  sprintf(corlysisUrl, "http://corlysis.com:8087/write?db=%s&u=token&p=%s",
-          db_name, db_key);
-  http.begin(corlysisUrl);
-  // HTTPS variant - check ssh public key fingerprint
-  // sprintf(corlysisUrl, "https://corlysis.com:8086/write?db=%s&u=token&p=%s",
-  // dbName, dbPassword); http.begin(corlysisUrl,
-  // "FF:2D:E9:25:75:39:D1:A0:5C:99:02:34:EF:81:73:0F:3F:3E:2D:0D");
-
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  int httpCode = http.POST(payloadStr);
-  Serial.print("http result:");
-  Serial.println(httpCode);
-  http.writeToStream(&Serial);
-  http.end();
-
-  if (httpCode == 204) {
-    counter = 0;
-    Serial.println("Data successfully sent.");
-  } else {
-    if (counter > 10 && httpCode == -1) {
-      Serial.println("WiFi: still not connected -> reboot.");
-      WiFi.forceSleepBegin();
-      wdt_reset();
-      ESP.restart();
-      while (1) wdt_reset();
-    }
-    counter++;
-    Serial.println("Data were not sent. Check network connection.");
-  }
-  Serial.println("");
-}
-
-void sendDataToBigQuery(float temp, float humidity, float pressure, int pm_1_0,
-                        int pm_2_5, int pm_10_0) {
-  const char* functions_url =
-      "https://us-central1-air-quality-weather.cloudfunctions.net/"
-      "input-data-js";
-  String post_data = getJSON(temp, humidity, pressure, pm_1_0, pm_2_5, pm_10_0);
-  Serial.println(post_data);
-}
-
-void sendDataToSheets(float temp, float humidity, float pressure, int pm_1_0,
-                      int pm_2_5, int pm_10_0) {
-  Serial.print("connecting to ");
-  Serial.println(update_host);
-  if (!https.connect(update_host, httpsPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-
-  // Verify validity of server's certificate
-  if (https.verifyCertChain(update_host)) {
-    Serial.println("Server certificate verified");
-  } else {
-    Serial.println("ERROR: certificate verification failed!");
-    return;
-  }
-
-  Serial.print("Starting OTA from: ");
-  Serial.print(update_host);
-  Serial.println(update_url);
-
-  // auto ret = ESPhttpUpdate.update(https, update_host, update_url);
-  // if successful, ESP will restart
-  // Serial.println("update failed");
-  // Serial.println((int) ret);
 }
 
 void sendData(float temperature, float humidity, float pressure, int pm_1_0,
@@ -245,6 +139,30 @@ void setup() {
       yield();
     }
   }
+
+  // // New ota server start
+  ArduinoOTA.setHostname("ESP8266");
+  ArduinoOTA.setPassword("esp8266");
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+  Serial.println("OTA ready");
 
   Wire.begin();  // initialize I2C that connects to sensor
   BMESensor.begin();
