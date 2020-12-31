@@ -65,7 +65,7 @@ float exp_avg(float acc, float new_val) {
 }
 
 // Generates response for Info Request
-String getJSON(float temp, float humidity, float pressure, int pm_1_0,
+String getJSONP(float temp, float humidity, float pressure, int pm_1_0,
                int pm_2_5, int pm_10_0) {
   char data[200];
   sprintf(
@@ -79,17 +79,17 @@ String getJSON(float temp, float humidity, float pressure, int pm_1_0,
 void setupHttpServer() {
   server.begin();
   // Info Methods
-  server.on("/json", HTTP_GET, []() {
+  server.on("/jsonp", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("access-control-allow-credentials", "false");
     server.sendHeader("access-control-allow-headers", "x-requested-with");
     server.sendHeader("access-control-allow-methods", "GET,OPTIONS");
     String json_data =
-        getJSON(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ,
+        getJSONP(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ,
                 AVG_PM_SP_UG_1_0, AVG_PM_AE_UG_2_5, AVG_PM_AE_UG_10_0);
     server.send(200, "text/json", "aq_data=" + String(json_data));
   });
-  server.on("/json", HTTP_OPTIONS, []() {
+  server.on("/jsonp", HTTP_OPTIONS, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("access-control-allow-credentials", "false");
     server.sendHeader("access-control-allow-headers", "x-requested-with");
