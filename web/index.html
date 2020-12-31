@@ -3,7 +3,6 @@
 <head>
     <title>Air Quality</title>
     <script src="https://thoughtless.sebastianboyd.com/json"></script>
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
@@ -60,6 +59,10 @@
     </div>
 
     <style>
+        @font-face {
+            font-family: 'Open Sans';
+            src: url('Open_Sans/OpenSans-Regular.ttf')  format('truetype')
+        }
         table {
             font-size: 1em;
             margin-left: 32px;
@@ -257,8 +260,9 @@
         document.getElementById("pressure").innerHTML = aq_data.pressure.toFixed(2);
     </script>
 </body>
+<!--
 <footer>
     <a href="https://docs.google.com/document/d/15o4ma3H6Dx1ETrAxq9cVA-CwegXly8KtFAE1k-uc4R4/edit?usp=sharing">Privacy Policy</a>
 </footer>
-
+-->
 </html>
