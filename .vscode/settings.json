@@ -1,6 +1,0 @@
-{
-    "terminal.integrated.env.osx": {
-        "PATH": "/Users/sebastianboyd/.platformio/penv/bin:/Users/sebastianboyd/.platformio/penv:/usr/local/heroku/bin:/Users/sebastianboyd/google-cloud-sdk/bin:/Users/sebastianboyd/go/bin:/Users/sebastianboyd/bin:/Users/sebastianboyd/bin/platform-tools:/Users/sebastianboyd/miniconda3/envs/py27/bin:/Users/sebastianboyd/miniconda3/bin:/Users/sebastianboyd/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/TeX/texbin:/opt/X11/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/usr/local/sbin:/usr/local/opt/ruby/bin:/usr/local/lib/python2.7/site-packages:/usr/local/share/npm/bin",
-        "PLATFORMIO_CALLER": "vscode"
-    }
-}
