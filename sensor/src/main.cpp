@@ -83,18 +83,11 @@ void setupHttpServer() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("access-control-allow-credentials", "false");
     server.sendHeader("access-control-allow-headers", "x-requested-with");
-    server.sendHeader("access-control-allow-methods", "GET,OPTIONS");
+    server.sendHeader("access-control-allow-methods", "GET");
     String json_data =
         getJSONP(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ,
                 AVG_PM_SP_UG_1_0, AVG_PM_AE_UG_2_5, AVG_PM_AE_UG_10_0);
     server.send(200, "text/json", "aq_data=" + String(json_data));
-  });
-  server.on("/jsonp", HTTP_OPTIONS, []() {
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.sendHeader("access-control-allow-credentials", "false");
-    server.sendHeader("access-control-allow-headers", "x-requested-with");
-    server.sendHeader("access-control-allow-methods", "GET,OPTIONS");
-    server.send(204);
   });
 }
 
