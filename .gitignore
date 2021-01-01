@@ -6,3 +6,5 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 firmware-latest.bin
+env/
+example/
