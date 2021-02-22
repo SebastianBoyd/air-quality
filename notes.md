@@ -1,7 +1,7 @@
 # Backend
 Data fetching 
   - run scheduled jobs to fetch data from sensor over http, later I should change this to mqtt
-  - APScheduler (probably better) or cron to schedule jobs
+  - APScheduler (flask-apscheduler?), Celery, or cron to schedule jobs
 
 API Sever
 - flask based
@@ -22,5 +22,5 @@ Serving
 - nginx directly serves static assets
 
 Frameworks?
-- could use popular framework such as React or Vue.js
+- could use popular framework such as Svelte, React (preact?) or Vue.js
 - or I could keep it simple with plain HTML, js
