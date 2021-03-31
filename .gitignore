@@ -8,3 +8,5 @@
 firmware-latest.bin
 env/
 example/
+postgres-data/
+caddy-data/

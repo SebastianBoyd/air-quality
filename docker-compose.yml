@@ -1,0 +1,37 @@
+version: '3.5'
+
+# networks:
+#   web:
+#     external: true
+
+services:
+
+  database:
+    image: postgres:latest
+    restart: unless-stopped
+    env_file: database.conf
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  api:
+    restart: unless-stopped
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/src:/src 
+    depends_on:
+      - database
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes: 
+      - ./web:/usr/share/caddy/
+      - ./caddy-data:/data
+    # networks:
+    #   - web

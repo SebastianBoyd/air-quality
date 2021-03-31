@@ -3,7 +3,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import databases
 import sqlalchemy
 
-DATABASE_URL = "postgresql://test:password@localhost:5432/air"
+DATABASE_URL = "postgresql://postgres:postgres@database:5432/air"
 database = databases.Database(DATABASE_URL)
 
 metadata = sqlalchemy.MetaData()
@@ -41,7 +41,7 @@ async def shutdown():
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello World2"}
 
 @app.get("/test")
 async def test():
