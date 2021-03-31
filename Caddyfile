@@ -1,0 +1,11 @@
+http://localhost {
+
+  file_server browse {
+    root /usr/share/caddy/
+  }
+
+  route /api/* {
+      uri strip_prefix api
+      reverse_proxy  api:8000
+  }
+}
