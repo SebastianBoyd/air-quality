@@ -15,26 +15,26 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
 
-  api:
-    restart: unless-stopped
-    build: ./backend
-    volumes:
-      - ./backend/src:/src 
-    depends_on:
-      - database
+#   api:
+#     restart: unless-stopped
+#     build: ./backend
+#     volumes:
+#       - ./backend/src:/src 
+#     depends_on:
+#       - database
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes: 
-      - ./web:/usr/share/caddy/
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+#   caddy:
+#     image: caddy:2-alpine
+#     restart: unless-stopped
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes: 
+#       - ./web:/usr/share/caddy/
+#       - ./Caddyfile:/etc/caddy/Caddyfile
+#       - caddy_data:/data
+#       - caddy_config:/config
 
-volumes:
-  caddy_data:
-  caddy_config:
+# volumes:
+#   caddy_data:
+#   caddy_config:

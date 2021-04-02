@@ -3,7 +3,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import databases
 import sqlalchemy
 
-DATABASE_URL = "postgresql://postgres:postgres@database:5432/air"
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
 
 metadata = sqlalchemy.MetaData()
