@@ -43,7 +43,7 @@ async def startup_event():
     await database.connect()
 
     update_time = await check_last_entry_time()
-    if update_time < datetime.datetime.now() - datetime.timedelta(minutes=5):
+    if  update_time == None or update_time < datetime.datetime.now() - datetime.timedelta(minutes=5):
         print("update more than 5 minutes ago")
         run_time = datetime.datetime.now()
     else:
