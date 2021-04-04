@@ -67,6 +67,17 @@ async def test():
     query = sensor_data.select()
     return await database.fetch_all(query)
 
+@app.get("/hourly")
+async def hourly():
+    query = '''
+        SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
+        FROM sensordata
+        WHERE timestamp >= NOW() - '1 day'::INTERVAL
+        GROUP BY date_trunc('hour', timestamp)
+        ORDER BY date_trunc('hour', timestamp);
+    '''
+    return await database.fetch_all(query)
+
 async def check_last_entry_time():
     query = "SELECT timestamp FROM sensordata ORDER BY timestamp DESC LIMIT 1"
     latest_value = await database.fetch_one(query=query)
