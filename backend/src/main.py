@@ -4,6 +4,7 @@ import databases
 import sqlalchemy
 import aiohttp
 import datetime
+import math
 
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
@@ -76,7 +77,13 @@ async def hourly():
         GROUP BY date_trunc('hour', timestamp)
         ORDER BY date_trunc('hour', timestamp);
     '''
-    return await database.fetch_all(query)
+    hours = await database.fetch_all(query)
+    output = []
+    for h in hours:
+        value = dict(h)
+        value['aqi'] = max(AQI_PM_2_5(value['pm_2_5']), AQI_PM_10(value['pm_10_0']))
+        output.append(value)
+    return output
 
 async def check_last_entry_time():
     query = "SELECT timestamp FROM sensordata ORDER BY timestamp DESC LIMIT 1"
@@ -112,3 +119,47 @@ async def read_sensor():
 async def push_sensor_to_db(values):
     query = sensor_data.insert()
     await database.execute(query=query, values=values)
+
+def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
+    a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
+    return round(a)
+
+def AQI_PM_2_5(concentration):
+    c = (math.floor(10 * concentration)) / 10
+    if (c >= 0 and c < 12.1):
+        AQI = linear(50, 0, 12, 0, c)
+    elif (c >= 12.1 and c < 35.5):
+        AQI = linear(100, 51, 35.4, 12.1, c)
+    elif (c >= 35.5 and c < 55.5):
+        AQI = linear(150, 101, 55.4, 35.5, c)
+    elif (c >= 55.5 and c < 150.5):
+        AQI = linear(200, 151, 150.4, 55.5, c)
+    elif (c >= 150.5 and c < 250.5):
+        AQI = linear(300, 201, 250.4, 150.5, c)
+    elif (c >= 250.5 and c < 350.5):
+        AQI = linear(400, 301, 350.4, 250.5, c)
+    elif (c >= 350.5 and c < 500.5):
+        AQI = linear(500, 401, 500.4, 350.5, c)
+    else:
+        AQI = "500"
+    return AQI
+
+def AQI_PM_10(concentration):
+    c = math.floor(concentration)
+    if (c >= 0 and c < 55):
+        AQI = linear(50, 0, 54, 0, c)
+    elif (c >= 55 and c < 155):
+        AQI = linear(100, 51, 154, 55, c)
+    elif (c >= 155 and c < 255):
+        AQI = linear(150, 101, 254, 155, c)
+    elif (c >= 255 and c < 355):
+        AQI = linear(200, 151, 354, 255, c)
+    elif (c >= 355 and c < 425):
+        AQI = linear(300, 201, 424, 355, c)
+    elif (c >= 425 and c < 505):
+        AQI = linear(400, 301, 504, 425, c)
+    elif (c >= 505 and c < 605):
+        AQI = linear(500, 401, 604, 505, c)
+    else:
+        AQI = "500"
+    return AQI
