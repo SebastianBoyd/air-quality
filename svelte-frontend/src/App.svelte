@@ -3,5 +3,17 @@
 	import Bar from './Bar.svelte';
 </script>
 
-<AQIMeter aqi={56}></AQIMeter>
-<Bar></Bar>
+<div class="container">
+	<AQIMeter aqi={25}></AQIMeter>
+	<Bar id="#bar"></Bar>
+</div>
+
+<style>
+	.container {
+		margin-left: auto;
+		margin-right: auto;
+		width: 75%;
+		padding: 10px;
+		max-width: 600px;
+	}
+</style>
