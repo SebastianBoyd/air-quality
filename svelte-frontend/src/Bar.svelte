@@ -1,9 +1,8 @@
 <script>
 	import { scaleLinear, scaleBand, extent, min, max } from 'd3';
-import { text } from 'svelte/internal';
 	import {AQItoDesc} from './aqi_calculations';
 
-	const points = [{"hours_ago":17,"aqi":466},{"hours_ago":16,"aqi":120},{"hours_ago":15,"aqi":13},{"hours_ago":14,"aqi":11},{"hours_ago":13,"aqi":10},{"hours_ago":12,"aqi":10},{"hours_ago":11,"aqi":10},{"hours_ago":10,"aqi":6},{"hours_ago":9,"aqi":7},{"hours_ago":8,"aqi":8},{"hours_ago":7,"aqi":6},{"hours_ago":6,"aqi":7},{"hours_ago":5,"aqi":3},{"hours_ago":4,"aqi":3},{"hours_ago":3,"aqi":5},{"hours_ago":2,"aqi":5},{"hours_ago":0,"aqi":4}];
+	const points = [{"hour":23,"aqi":12},{"hour":0,"aqi":11},{"hour":1,"aqi":10},{"hour":2,"aqi":10},{"hour":3,"aqi":10},{"hour":4,"aqi":6},{"hour":5,"aqi":7},{"hour":6,"aqi":8},{"hour":7,"aqi":6},{"hour":8,"aqi":7},{"hour":9,"aqi":3},{"hour":10,"aqi":3},{"hour":11,"aqi":5},{"hour":12,"aqi":5},{"hour":14,"aqi":4},{"hour":15,"aqi":1},{"hour":16,"aqi":2}];
 
 // 	const xTicks = points.map(d => d.year);
 // 	const yTicks = extent(points, d => d.birthrate);
@@ -20,7 +19,7 @@ import { text } from 'svelte/internal';
 		.domain([0, max(points, d => d.aqi)])
 		.range([height - padding.top - padding.bottom, padding.top]);
 	
-	$: xTicks = points.map(d => d.hours_ago);
+	$: xTicks = points.map(d => d.hour);
 	
 	$: yTicks = yScale.ticks();
 
@@ -62,7 +61,7 @@ import { text } from 'svelte/internal';
 		</g>
 		<text transform="translate({innerWidth/2 + padding.left},{height - padding.bottom / 4})" 
 					text-anchor="middle"
-					class="axis-label">Hours Ago</text>
+					class="axis-label">Time (24h)</text>
 		<text 
 			transform="translate({12},{height / 2 - padding.top}) rotate(-90)" 
 			text-anchor="middle"
