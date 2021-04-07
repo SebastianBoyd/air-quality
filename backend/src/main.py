@@ -83,7 +83,8 @@ async def hourly():
     dt = dt.replace(minute=0, second=0, microsecond=0)
     for h in hours:
         value = {}
-        value['hours_ago'] = (dt - h['datetime']).seconds//3600
+        timedelta = (dt - h['datetime'])
+        value['hours_ago'] = timedelta.seconds//3600 + 24 * timedelta.days
         value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
         output.append(value)
     return output
