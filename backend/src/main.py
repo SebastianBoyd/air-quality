@@ -79,9 +79,12 @@ async def hourly():
     '''
     hours = await database.fetch_all(query)
     output = []
+    dt = datetime.datetime.now()
+    dt = dt.replace(minute=0, second=0, microsecond=0)
     for h in hours:
-        value = dict(h)
-        value['aqi'] = max(AQI_PM_2_5(value['pm_2_5']), AQI_PM_10(value['pm_10_0']))
+        value = {}
+        value['hours_ago'] = (dt - h['datetime']).seconds//3600
+        value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
         output.append(value)
     return output
 

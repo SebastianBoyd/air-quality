@@ -1,15 +1,7 @@
 <script>
 	import { scaleLinear, scaleBand, extent, min, max } from 'd3';
 
-	const points = [
-		{ year: 1990, birthrate: 16.7 },
-		{ year: 1995, birthrate: 14.6 },
-		{ year: 2000, birthrate: 14.4 },
-		{ year: 2005, birthrate: 14 },
-		{ year: 2010, birthrate: 13 },
-		{ year: 2015, birthrate: 12.4 },
-		{ year: 2018, birthrate: 12.6 }
-	];
+	const points = [{"hours_ago":17,"aqi":18},{"hours_ago":16,"aqi":17},{"hours_ago":15,"aqi":13},{"hours_ago":14,"aqi":11},{"hours_ago":13,"aqi":10},{"hours_ago":12,"aqi":10},{"hours_ago":11,"aqi":10},{"hours_ago":10,"aqi":6},{"hours_ago":9,"aqi":7},{"hours_ago":8,"aqi":8},{"hours_ago":7,"aqi":6},{"hours_ago":6,"aqi":7},{"hours_ago":5,"aqi":3},{"hours_ago":4,"aqi":3},{"hours_ago":3,"aqi":5},{"hours_ago":2,"aqi":5},{"hours_ago":0,"aqi":4}];
 
 // 	const xTicks = points.map(d => d.year);
 // 	const yTicks = extent(points, d => d.birthrate);
@@ -27,10 +19,10 @@
 		.range([padding.left, width - padding.right]);
 
 	$: yScale = scaleLinear()
-		.domain(extent(points, d => d.birthrate))
+		.domain([0, max(points, d => d.aqi)])
 		.range([height - padding.bottom, padding.top]);
 	
-	$: xTicks = points.map(d => d.year - 2018);
+	$: xTicks = points.map(d => d.hours_ago);
 	
 	$: yTicks = yScale.ticks();
 
@@ -86,8 +78,6 @@
 	}
 </style>
 
-<h2>US birthrate by year</h2>
-
 <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
 	<svg>
 		<!-- y axis -->
@@ -113,9 +103,9 @@
 			{#each points as point, i}
 				<rect
 					x="{xScale(i) + 2}"
-					y="{yScale(point.birthrate)}"
+					y="{yScale(point.aqi)}"
 					width="{barWidth - 4}"
-					height="{height - padding.bottom - yScale(point.birthrate)}"
+					height="{height - padding.bottom - yScale(point.aqi)}"
 				></rect>
 			{/each}
 		</g>
