@@ -43,7 +43,10 @@
 		<g class="axis x-axis">
 			{#each xTicks as tick, i}
 				<g class="tick" transform="translate({xScale(i)},{height - padding.bottom + 16})">
-					<text x="{barWidth/2}" y="-4">{tick}</text>
+					{#if tick % 2 == 0}
+						<line x1="{barWidth/2}" x2="{barWidth/2}" y1="-12" y2="-25"></line>
+						<text x="{barWidth/2}" y="-2">{tick}</text>
+					{/if}
 				</g>
 			{/each}
 		</g>
@@ -53,7 +56,7 @@
 				<rect
 					x="{xScale(i) + 2}"
 					y="{yScale(d.aqi)}"
-					width="{barWidth - 4}"
+					width="{barWidth - 2}"
 					height="{height - padding.bottom - yScale(d.aqi)}"
 					fill="{AQItoDesc(d.aqi).color}"
 				></rect>
@@ -92,9 +95,13 @@
 		font-weight: 200;
 	}
 
-	.tick line {
+	.y-axis .tick line {
 		stroke: #d1d1d1;
 		stroke-dasharray: 2;
+	}
+
+	.x-axis .tick line {
+		stroke: #7e7e7e;
 	}
 
 	.tick text {
