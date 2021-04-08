@@ -2,7 +2,7 @@
 	import { scaleLinear, scaleBand, extent, min, max } from 'd3';
 	import {AQItoDesc} from './aqi_calculations';
 
-	const points = [{"hour":23,"aqi":12},{"hour":0,"aqi":11},{"hour":1,"aqi":10},{"hour":2,"aqi":10},{"hour":3,"aqi":10},{"hour":4,"aqi":6},{"hour":5,"aqi":7},{"hour":6,"aqi":8},{"hour":7,"aqi":6},{"hour":8,"aqi":7},{"hour":9,"aqi":3},{"hour":10,"aqi":3},{"hour":11,"aqi":5},{"hour":12,"aqi":5},{"hour":14,"aqi":4},{"hour":15,"aqi":1},{"hour":16,"aqi":2}];
+	export let data;
 
 // 	const xTicks = points.map(d => d.year);
 // 	const yTicks = extent(points, d => d.birthrate);
@@ -12,19 +12,19 @@
 	let height = 200;
 
 	$: xScale = scaleLinear()
-		.domain([0, points.length])
+		.domain([0, data.length])
 		.range([padding.left, width - padding.right]);
 
 	$: yScale = scaleLinear()
-		.domain([0, max(points, d => d.aqi)])
+		.domain([0, max(data, d => d.aqi)])
 		.range([height - padding.top - padding.bottom, padding.top]);
 	
-	$: xTicks = points.map(d => d.hour);
+	$: xTicks = data.map(d => d.hour);
 	
 	$: yTicks = yScale.ticks();
 
 	$: innerWidth = width - (padding.left + padding.right);
-	$: barWidth = innerWidth / points.length;
+	$: barWidth = innerWidth / data.length;
 </script>
 
 <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
@@ -49,13 +49,13 @@
 		</g>
 
 		<g class='bars'>
-			{#each points as point, i}
+			{#each data as d, i}
 				<rect
 					x="{xScale(i) + 2}"
-					y="{yScale(point.aqi)}"
+					y="{yScale(d.aqi)}"
 					width="{barWidth - 4}"
-					height="{height - padding.bottom - yScale(point.aqi)}"
-					fill="{AQItoDesc(point.aqi).color}"
+					height="{height - padding.bottom - yScale(d.aqi)}"
+					fill="{AQItoDesc(d.aqi).color}"
 				></rect>
 			{/each}
 		</g>

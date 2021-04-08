@@ -9,7 +9,7 @@
 
 <div id="aqi-container" style="text-align: center; background-color: {aqi_description.color}">
 	<span id="aqi_name">{aqi_description.text}</span>
-	<span id="aqi">{aqi}</span>
+	<span id="aqi">{isNaN(aqi) ? '': aqi }</span>
 	<div class="meter">
 		<div style="width: {aqi_description.percent}%" id="percent"></div>
 	</div>
