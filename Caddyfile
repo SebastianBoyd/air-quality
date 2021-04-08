@@ -9,3 +9,15 @@ https://air.sebastianboyd.com {
       reverse_proxy  localhost:8000
   }
 }
+
+http://doubtful.duckdns.org {
+
+  file_server browse {
+    root /mnt/media/air-quality/svelte-frontend/public
+  }
+
+  route /api/* {
+      uri strip_prefix api
+      reverse_proxy  localhost:8000
+  }
+}

@@ -37,7 +37,7 @@ http_session = None
 
 app = FastAPI()
 
-origins = ["https://air.sebastianboyd.com"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
