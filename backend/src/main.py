@@ -37,7 +37,7 @@ http_session = None
 
 app = FastAPI()
 
-origins = ["http://localhost:5000", "https://air.sebastianboyd.com", "http://doubtful.duckdns.org"]
+origins = ["https://air.sebastianboyd.com"]
 
 app.add_middleware(
     CORSMiddleware,

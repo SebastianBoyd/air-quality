@@ -1,4 +1,4 @@
-:80 {
+https://air.sebastianboyd.com {
 
   file_server browse {
     root /mnt/media/air-quality/svelte-frontend/public
@@ -6,6 +6,6 @@
 
   route /api/* {
       uri strip_prefix api
-      reverse_proxy  api:8000
+      reverse_proxy  localhost:8000
   }
 }
