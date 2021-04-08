@@ -27,7 +27,7 @@
 		.then(response => response.json())
 		.then(data => realtime_loaded(data));
 
-	fetch('http://doubtful.duckdns.org:8000/hourly')
+	fetch('https://air.sebastianboyd.com/api/hourly')
 		.then(response => response.json())
 		.then(data => hourly_loaded(data));
 </script>
