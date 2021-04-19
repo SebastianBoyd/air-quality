@@ -44,7 +44,7 @@
 			{#each xTicks as tick, i}
 				<g class="tick" transform="translate({xScale(i)},{height - padding.bottom + 16})">
 					{#if tick % 2 == 0}
-						<line x1="{barWidth/2}" x2="{barWidth/2}" y1="-12" y2="-25"></line>
+						<line x1="{barWidth/2}" x2="{barWidth/2}" y1="-10" y2="-16"></line>
 						<text x="{barWidth/2}" y="-2">{tick}</text>
 					{/if}
 				</g>
@@ -55,9 +55,9 @@
 			{#each data as d, i}
 				<rect
 					x="{xScale(i) + 2}"
-					y="{yScale(d.aqi)}"
+					y="{yScale(d.aqi) + padding.top}"
 					width="{barWidth - 2}"
-					height="{height - padding.bottom - yScale(d.aqi)}"
+					height="{height - padding.bottom - padding.top - yScale(d.aqi)}"
 					fill="{AQItoDesc(d.aqi).color}"
 				></rect>
 			{/each}
