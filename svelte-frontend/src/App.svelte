@@ -58,7 +58,8 @@
 
 	@font-face {	
 		font-family: 'Open Sans';
-		src: url('/Open_Sans/OpenSans-Regular.ttf')  format('truetype')
+		src: url('/Open_Sans/OpenSans-Regular.ttf')  format('truetype');
+		font-display: swap;
 	}
 
 	table {
@@ -68,10 +69,10 @@
 	td {
 		padding-right: 32px;
 	}
-
+/* 
 	.container {
 		font-family: 'Open Sans', sans-serif;
-	}
+	} */
 
 	.container {
 		margin-left: auto;
@@ -81,6 +82,6 @@
 		max-width: 600px;
 	}
 	h3 {
-		font-weight: 200;
+		font-weight: 300;
 	}
 </style>

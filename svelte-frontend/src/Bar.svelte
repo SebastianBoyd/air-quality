@@ -124,6 +124,6 @@
 	}
 
 	.axis-label {
-		font-weight: 200;
+		font-weight: 300;
 	}
 </style>
