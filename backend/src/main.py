@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import databases
-import sqlalchemy
 import aiohttp
 import datetime
 import math
@@ -11,27 +10,7 @@ import math
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
 
-metadata = sqlalchemy.MetaData()
-
-sensor_data = sqlalchemy.Table(
-    "sensordata",
-    metadata,
-    sqlalchemy.Column("timestamp", sqlalchemy.DateTime),
-    sqlalchemy.Column("device_id", sqlalchemy.Integer),
-    sqlalchemy.Column("temperature", sqlalchemy.Numeric(5,2)),
-    sqlalchemy.Column("humidity", sqlalchemy.Numeric(5,2)),
-    sqlalchemy.Column("pressure", sqlalchemy.Numeric(6,2)),
-    sqlalchemy.Column("pm_1_0", sqlalchemy.SmallInteger),
-    sqlalchemy.Column("pm_2_5", sqlalchemy.SmallInteger),
-    sqlalchemy.Column("pm_10_0", sqlalchemy.SmallInteger),
-)
-
-engine = sqlalchemy.create_engine(
-    DATABASE_URL
-)
-metadata.create_all(engine)
-
-Schedule = AsyncIOScheduler()
+scheduler = AsyncIOScheduler()
 
 http_session = None
 
@@ -49,26 +28,26 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    Schedule.start()
+    scheduler.start()
     
     global http_session
     http_session = aiohttp.ClientSession()
     await database.connect()
 
     update_time = await check_last_entry_time()
-    if  update_time == None or update_time < datetime.datetime.now() - datetime.timedelta(minutes=5):
+    if  update_time == None or update_time < datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5):
         print("update more than 5 minutes ago")
         run_time = datetime.datetime.now()
     else:
         print("update less than 5, minutes ago")
         run_time = update_time + datetime.timedelta(minutes=5)
 
-    Schedule.add_job(read_sensor, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
+    scheduler.add_job(read_sensor, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
 
 @app.on_event("shutdown")
 async def shutdown():
     scheduler.remove_job('sensor_schedule')
-    await session.close()
+    await http_session.close()
     await database.disconnect()
 
 @app.get("/")
@@ -77,7 +56,13 @@ async def root():
 
 @app.get("/test")
 async def test():
-    query = sensor_data.select()
+    # query = sensor_data.select()
+    query = '''
+            SELECT *
+            FROM sensordata
+            ORDERBY timestamp DESC
+            LIMIT 20
+            '''
     return await database.fetch_all(query)
 
 @app.get("/hourly")
@@ -119,23 +104,27 @@ async def read_sensor():
             if response.status == 200:
                 result = await response.json(content_type='text/json')
                 print(result)
-                await push_sensor_to_db({
-                                        "timestamp": datetime.datetime.now(),
-                                        "device_id": 1,
-                                        "temperature": result['temp'],
-                                        "humidity": result['humidity'],
-                                        "pressure": result['pressure'],
-                                        "pm_1_0": result['pm_1_0'],
-                                        "pm_2_5": result['pm_2_5'],
-                                        "pm_10_0": result['pm_10_0'],
-                                        })
+                values = {
+                        "timestamp": datetime.datetime.now(),
+                        "device_id": 1,
+                        "temperature": result['temp'],
+                        "humidity": result['humidity'],
+                        "pressure": result['pressure'],
+                        "pm_1_0": result['pm_1_0'],
+                        "pm_2_5": result['pm_2_5'],
+                        "pm_10_0": result['pm_10_0'],
+                        }
+                query = '''
+                        INSERT INTO sensordata (timestamp, device_id, temperature, humidity, 
+                                                pressure, pm_1_0, pm_2_5, pm_10_0)
+                        VALUES (:timestamp, :device_id, :temperature, :humidity,
+                                :pressure, :pm_1_0, :pm_2_5, :pm_10_0)
+                        '''
+
+                await database.execute(query=query, values=values)
 
     except aiohttp.ClientConnectorError as e:
           print('Connection Error', str(e))
-
-async def push_sensor_to_db(values):
-    query = sensor_data.insert()
-    await database.execute(query=query, values=values)
 
 def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
