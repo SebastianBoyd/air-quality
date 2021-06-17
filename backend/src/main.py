@@ -17,7 +17,7 @@ sensor_data = sqlalchemy.Table(
     "sensordata",
     metadata,
     sqlalchemy.Column("timestamp", sqlalchemy.DateTime),
-    sqlalchemy.Column("deviceID", sqlalchemy.Integer),
+    sqlalchemy.Column("device_id", sqlalchemy.Integer),
     sqlalchemy.Column("temperature", sqlalchemy.Numeric(5,2)),
     sqlalchemy.Column("humidity", sqlalchemy.Numeric(5,2)),
     sqlalchemy.Column("pressure", sqlalchemy.Numeric(6,2)),
@@ -121,7 +121,7 @@ async def read_sensor():
                 print(result)
                 await push_sensor_to_db({
                                         "timestamp": datetime.datetime.now(),
-                                        "deviceID": 1,
+                                        "device_id": 1,
                                         "temperature": result['temp'],
                                         "humidity": result['humidity'],
                                         "pressure": result['pressure'],
