@@ -42,7 +42,7 @@ async def startup_event():
         print("update less than 5, minutes ago")
         run_time = update_time + datetime.timedelta(minutes=5)
 
-    scheduler.add_job(read_sensor, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
+    scheduler.add_job(update_values, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -64,6 +64,11 @@ async def test():
             LIMIT 20
             '''
     return await database.fetch_all(query)
+
+@app.get("/current/{device_id}")
+async def current_usage(device_id: str):
+    url = "http://thoughtless.duckdns.org/json"
+    return await read_sensor(url)
 
 @app.get("/hourly")
 async def hourly():
@@ -94,9 +99,8 @@ async def check_last_entry_time():
         return None
     return latest_value['timestamp']
 
-async def read_sensor():
+async def read_sensor(url):
     print("attempting to read sensor data now ({})".format(datetime.datetime.now()))
-    url = "http://thoughtless.duckdns.org/json"
 
     try:
         async with http_session.get(url) as response:
@@ -104,27 +108,32 @@ async def read_sensor():
             if response.status == 200:
                 result = await response.json(content_type='text/json')
                 print(result)
-                values = {
-                        "timestamp": datetime.datetime.now(),
-                        "device_id": 1,
-                        "temperature": result['temp'],
-                        "humidity": result['humidity'],
-                        "pressure": result['pressure'],
-                        "pm_1_0": result['pm_1_0'],
-                        "pm_2_5": result['pm_2_5'],
-                        "pm_10_0": result['pm_10_0'],
-                        }
-                query = '''
-                        INSERT INTO sensordata (timestamp, device_id, temperature, humidity, 
-                                                pressure, pm_1_0, pm_2_5, pm_10_0)
-                        VALUES (:timestamp, :device_id, :temperature, :humidity,
-                                :pressure, :pm_1_0, :pm_2_5, :pm_10_0)
-                        '''
-
-                await database.execute(query=query, values=values)
+                return result
 
     except aiohttp.ClientConnectorError as e:
           print('Connection Error', str(e))
+
+async def update_values():
+    url = "http://thoughtless.duckdns.org/json"
+    result = await read_sensor(url)
+    values = {
+        "timestamp": datetime.datetime.now(),
+        "device_id": 1,
+        "temperature": result['temp'],
+        "humidity": result['humidity'],
+        "pressure": result['pressure'],
+        "pm_1_0": result['pm_1_0'],
+        "pm_2_5": result['pm_2_5'],
+        "pm_10_0": result['pm_10_0'],
+        }
+    query = '''
+            INSERT INTO sensordata (timestamp, device_id, temperature, humidity, 
+                                    pressure, pm_1_0, pm_2_5, pm_10_0)
+            VALUES (:timestamp, :device_id, :temperature, :humidity,
+                    :pressure, :pm_1_0, :pm_2_5, :pm_10_0)
+            '''
+
+    await database.execute(query=query, values=values)
 
 def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
