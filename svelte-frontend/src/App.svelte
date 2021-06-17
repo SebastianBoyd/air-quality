@@ -23,7 +23,7 @@
 		points = data;
 	}
 
-	fetch('https://thoughtless.sebastianboyd.com/json')
+	fetch('https://air.sebastianboyd.com/api/current/1')
 		.then(response => response.json())
 		.then(data => realtime_loaded(data));
 
