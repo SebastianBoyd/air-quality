@@ -6,6 +6,7 @@ import databases
 import aiohttp
 import datetime
 import math
+import time
 
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
@@ -79,7 +80,10 @@ async def hourly():
         GROUP BY date_trunc('hour', timestamp)
         ORDER BY date_trunc('hour', timestamp);
     '''
+    start = time.time()
     hours = await database.fetch_all(query)
+    end = time.time()
+    print("db lookup time: {} ms".format( round((end-start) * 1000, 2) ))
     output = []
     # dt = datetime.datetime.now(datetime.timezone.utc)
     # dt = dt.replace(minute=0, second=0, microsecond=0)
