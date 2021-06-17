@@ -76,11 +76,11 @@ async def hourly():
     '''
     hours = await database.fetch_all(query)
     output = []
-    dt = datetime.datetime.now()
-    dt = dt.replace(minute=0, second=0, microsecond=0)
+    # dt = datetime.datetime.now(datetime.timezone.utc)
+    # dt = dt.replace(minute=0, second=0, microsecond=0)
     for h in hours:
         value = {}
-        timedelta = (dt - h['datetime'])
+        # timedelta = (dt - h['datetime'])
         # value['hours_ago'] = timedelta.seconds//3600 + 24 * timedelta.days
         value['hour'] = h['datetime'].hour
         value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
