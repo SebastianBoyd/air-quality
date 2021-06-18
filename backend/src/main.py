@@ -17,6 +17,8 @@ http_session = None
 
 app = FastAPI()
 
+memcache = {'hourly': None}
+
 origins = ["https://air.sebastianboyd.com", "http://localhost:5000"]
 
 app.add_middleware(
@@ -43,7 +45,8 @@ async def startup_event():
         print("update less than 5, minutes ago")
         run_time = update_time + datetime.timedelta(minutes=5)
 
-    scheduler.add_job(update_values, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
+    scheduler.add_job(store_values, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
+    scheduler.add_job(refresh_hourly, 'interval', minutes=1, id='refresh_hourly_schedule', next_run_time=datetime.datetime.now())
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -73,28 +76,7 @@ async def current_usage(device_id: str):
 
 @app.get("/hourly")
 async def hourly():
-    query = '''
-        SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
-        FROM sensordata
-        WHERE timestamp >= NOW() - '1 day'::INTERVAL
-        GROUP BY date_trunc('hour', timestamp)
-        ORDER BY date_trunc('hour', timestamp);
-    '''
-    start = time.time()
-    hours = await database.fetch_all(query)
-    end = time.time()
-    print("db lookup time: {} ms".format( round((end-start) * 1000, 2) ))
-    output = []
-    # dt = datetime.datetime.now(datetime.timezone.utc)
-    # dt = dt.replace(minute=0, second=0, microsecond=0)
-    for h in hours:
-        value = {}
-        # timedelta = (dt - h['datetime'])
-        # value['hours_ago'] = timedelta.seconds//3600 + 24 * timedelta.days
-        value['hour'] = h['datetime'].hour
-        value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
-        output.append(value)
-    return output
+    return memcache["hourly"]
 
 async def check_last_entry_time():
     query = "SELECT timestamp FROM sensordata ORDER BY timestamp DESC LIMIT 1"
@@ -117,7 +99,7 @@ async def read_sensor(url):
     except aiohttp.ClientConnectorError as e:
           print('Connection Error', str(e))
 
-async def update_values():
+async def store_values():
     url = "http://thoughtless.duckdns.org/json"
     result = await read_sensor(url)
     values = {
@@ -138,6 +120,26 @@ async def update_values():
             '''
 
     await database.execute(query=query, values=values)
+
+async def refresh_hourly():
+    query = '''
+        SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
+        FROM sensordata
+        WHERE timestamp >= NOW() - '1 day'::INTERVAL
+        GROUP BY date_trunc('hour', timestamp)
+        ORDER BY date_trunc('hour', timestamp);
+    '''
+    start = time.time()
+    hours = await database.fetch_all(query)
+    end = time.time()
+    print("db lookup time: {} ms".format( round((end-start) * 1000, 2) ))
+    output = []
+    for h in hours:
+        value = {}
+        value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
+        output.append(value)
+    
+    memcache["hourly"] = output
 
 def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
