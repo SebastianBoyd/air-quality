@@ -11,7 +11,7 @@ import time
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
 
-scheduler = AsyncIOScheduler()
+scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 30},)
 
 http_session = None
 
