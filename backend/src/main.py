@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -45,7 +45,7 @@ async def startup_event():
         print("update less than 5, minutes ago")
         run_time = update_time + datetime.timedelta(minutes=5)
 
-    scheduler.add_job(store_values, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
+    scheduler.add_job(store_all, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
     scheduler.add_job(refresh_hourly, 'interval', minutes=1, id='refresh_hourly_schedule', next_run_time=datetime.datetime.now())
 
 @app.on_event("shutdown")
@@ -78,6 +78,10 @@ async def current_usage(device_id: str):
 async def hourly():
     return memcache["hourly"]
 
+@app.get("/check_ip")
+async def check_ip(request: Request):
+    return request.client.host
+
 async def check_last_entry_time():
     query = "SELECT timestamp FROM sensordata ORDER BY timestamp DESC LIMIT 1"
     latest_value = await database.fetch_one(query=query)
@@ -99,12 +103,15 @@ async def read_sensor(url):
     except aiohttp.ClientConnectorError as e:
           print('Connection Error', str(e))
 
-async def store_values():
-    url = "http://thoughtless.duckdns.org/json"
+async def store_all():
+    await store_values("http://thoughtless.duckdns.org/json", 1)
+    await store_values("http://doubtful.duckdns.org:8626/json", 2)
+
+async def store_values(url, device_id):
     result = await read_sensor(url)
     values = {
         "timestamp": datetime.datetime.now(),
-        "device_id": 1,
+        "device_id": device_id,
         "temperature": result['temp'],
         "humidity": result['humidity'],
         "pressure": result['pressure'],
