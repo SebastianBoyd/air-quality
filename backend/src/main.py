@@ -85,6 +85,11 @@ async def hourly():
 async def check_ip(request: Request):
     return request.client.host
 
+@app.get("/indoor_allowed")
+async def indoor_allowed(request: Request):
+    allowed_ips = ["127.0.0.1", "98.37.4.240"]
+    return request.client.host in allowed_ips
+
 async def check_last_entry_time():
     query = "SELECT timestamp FROM sensordata ORDER BY timestamp DESC LIMIT 1"
     latest_value = await database.fetch_one(query=query)
