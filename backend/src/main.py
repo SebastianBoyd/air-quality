@@ -7,6 +7,7 @@ import aiohttp
 import datetime
 import math
 import time
+import pytz
 
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/air"
 database = databases.Database(DATABASE_URL)
@@ -38,12 +39,14 @@ async def startup_event():
     await database.connect()
 
     update_time = await check_last_entry_time()
+    
     if  update_time == None or update_time < datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5):
         print("update more than 5 minutes ago")
         run_time = datetime.datetime.now()
     else:
         print("update less than 5, minutes ago")
         run_time = update_time + datetime.timedelta(minutes=5)
+        run_time = run_time.replace(tzinfo = pytz.utc)
 
     scheduler.add_job(store_all, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
     scheduler.add_job(refresh_hourly, 'interval', minutes=1, id='refresh_hourly_schedule', next_run_time=datetime.datetime.now())
@@ -105,19 +108,20 @@ async def read_sensor(url):
 
 async def store_all():
     await store_values("http://thoughtless.duckdns.org/json", 1)
-    await store_values("http://doubtful.duckdns.org:8626/json", 2)
+    await store_values("http://thoughtless.duckdns.org:8626/json", 2)
 
 async def store_values(url, device_id):
     result = await read_sensor(url)
+    print(result.get('temp'))
     values = {
         "timestamp": datetime.datetime.now(),
         "device_id": device_id,
-        "temperature": result['temp'],
-        "humidity": result['humidity'],
-        "pressure": result['pressure'],
-        "pm_1_0": result['pm_1_0'],
-        "pm_2_5": result['pm_2_5'],
-        "pm_10_0": result['pm_10_0'],
+        "temperature": result.get('temp'),
+        "humidity": result.get('humidity'),
+        "pressure": result.get('pressure'),
+        "pm_1_0": result.get('pm_1_0'),
+        "pm_2_5": result.get('pm_2_5'),
+        "pm_10_0": result.get('pm_10_0'),
         }
     query = '''
             INSERT INTO sensordata (timestamp, device_id, temperature, humidity, 

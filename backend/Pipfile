@@ -11,6 +11,7 @@ databases = {extras = ["postgresql"], version = "*"}
 sqlalchemy = "*"
 psycopg2-binary = "*"
 aiohttp = "*"
+pytz = "*"
 
 [dev-packages]
 
