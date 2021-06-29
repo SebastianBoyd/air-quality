@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -74,7 +74,12 @@ async def test():
 
 @app.get("/current/{device_id}")
 async def current_usage(device_id: str):
-    url = "http://thoughtless.duckdns.org/json"
+    if device_id == '1':
+        url = "http://thoughtless.duckdns.org/json"
+    elif device_id == '2':
+        url = "http://thoughtless.duckdns.org:8626/json"
+    else:
+        raise HTTPException(status_code=404, detail="device does not exist")
     return await read_sensor(url)
 
 @app.get("/hourly")
