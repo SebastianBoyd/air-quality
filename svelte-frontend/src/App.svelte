@@ -25,7 +25,14 @@
 		points = data;
 	}
 
-	let indoor_enabled = JSON.parse(localStorage["indor_enabled"])
+	function getLocalStorageBool(key) {
+		if (localStorage[key] === undefined) {
+			return false
+		}
+		return JSON.parse(localStorage[key])
+	}
+
+	let indoor_enabled = getLocalStorageBool("indoor_enabled")
 
 	if (!indoor_enabled) {
 	fetch('https://air.sebastianboyd.com/api/indoor_allowed')
