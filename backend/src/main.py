@@ -147,6 +147,7 @@ async def refresh_hourly():
         SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
         FROM sensordata
         WHERE timestamp >= NOW() - '1 day'::INTERVAL
+        AND device_id = 1
         GROUP BY date_trunc('hour', timestamp)
         ORDER BY date_trunc('hour', timestamp);
     '''
