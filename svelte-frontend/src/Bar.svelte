@@ -16,7 +16,7 @@
 		.range([padding.left, width - padding.right]);
 
 	$: yScale = scaleLinear()
-		.domain([0, max(data, d => d.aqi)])
+		.domain([-0.5, max(data, d => d.aqi)])
 		.range([height - padding.top - padding.bottom, padding.top]);
 	
 	$: xTicks = data.map(d => d.hour);
@@ -34,7 +34,9 @@
 			{#each yTicks as tick}
 				<g class="tick tick-{tick}" transform="translate(20, {yScale(tick)})">
 					<line x2="100%"></line>
-					<text y="-2">{tick}</text>
+					{#if tick >= 0}
+						<text y="-2">{tick}</text>
+					{/if}
 				</g>
 			{/each}
 		</g>
