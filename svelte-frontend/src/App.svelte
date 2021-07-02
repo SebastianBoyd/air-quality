@@ -33,13 +33,12 @@
 	}
 
 	let indoor_enabled = getLocalStorageBool("indoor_enabled")
-
 	if (!indoor_enabled) {
 	fetch('https://air.sebastianboyd.com/api/indoor_allowed')
 		.then(response => response.json())
 		.then(data => {
 			indoor_enabled = data
-			localStorage["indor_enabled"] = data;
+			localStorage["indoor_enabled"] = data;
 		});
 	}
 
