@@ -1,5 +1,5 @@
 <script>
-	import { scaleLinear, scaleBand, extent, min, max } from 'd3';
+	import { scaleLinear, max } from 'd3';
 	import {AQItoDesc} from './aqi_calculations';
 
 	export let data;
