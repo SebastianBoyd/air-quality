@@ -164,6 +164,7 @@ async def refresh_hourly(device_id):
     for h in hours:
         value = {}
         value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
+        value['hour'] = h['datetime'].hour
         output.append(value)
     
     memcache["hourly={}".format(device_id)] = output
