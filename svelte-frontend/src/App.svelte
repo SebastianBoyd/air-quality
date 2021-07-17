@@ -55,7 +55,7 @@
 		.then(response => response.json())
 		.then(data => realtime_loaded(data));
 
-	fetch('https://air.sebastianboyd.com/api/hourly')
+	fetch('https://air.sebastianboyd.com/api/hourly/1')
 		.then(response => response.json())
 		.then(data => hourly_loaded(data));
 </script>
@@ -67,7 +67,7 @@
 	<h3>Indoor AQI</h3>
 	<AQIMeter aqi={indoor_aqi}></AQIMeter>
 	{/if}
-	<h3>AQI Last 24 Hours</h3>
+	<h3>Outdoor AQI Last 24 Hours</h3>
 	<Bar data={points}></Bar>
 	<h3>Particulate Matter</h3>
 	<table>

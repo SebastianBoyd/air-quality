@@ -18,7 +18,7 @@ http_session = None
 
 app = FastAPI()
 
-memcache = {'hourly': None}
+memcache = {'hourly-1': None, 'hourly-2': None}
 
 origins = ["https://air.sebastianboyd.com", "http://localhost:5000"]
 
@@ -49,7 +49,7 @@ async def startup_event():
         run_time = run_time.replace(tzinfo = pytz.utc)
 
     scheduler.add_job(store_all, 'interval', minutes=5, id='sensor_schedule', next_run_time=run_time)
-    scheduler.add_job(refresh_hourly, 'interval', minutes=1, id='refresh_hourly_schedule', next_run_time=datetime.datetime.now())
+    scheduler.add_job(refresh_all_hourly, 'interval', minutes=1, id='refresh_all_hourly_schedule', next_run_time=datetime.datetime.now())
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -82,9 +82,9 @@ async def current_usage(device_id: str):
         raise HTTPException(status_code=404, detail="device does not exist")
     return await read_sensor(url)
 
-@app.get("/hourly")
-async def hourly():
-    return memcache["hourly"]
+@app.get("/hourly/{device_id}")
+async def hourly(device_id: int):
+    return memcache["hourly={}".format(device_id)]
 
 @app.get("/check_ip")
 async def check_ip(request: Request):
@@ -142,17 +142,22 @@ async def store_values(url, device_id):
 
     await database.execute(query=query, values=values)
 
-async def refresh_hourly():
+async def refresh_all_hourly():
+    await refresh_hourly(1)
+    await refresh_hourly(2)
+
+async def refresh_hourly(device_id):
     query = '''
         SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
         FROM sensordata
         WHERE timestamp >= NOW() - '1 day'::INTERVAL
-        AND device_id = 1
+        AND device_id = :device_id
         GROUP BY date_trunc('hour', timestamp)
         ORDER BY date_trunc('hour', timestamp);
     '''
+    values = {'device_id': device_id}
     start = time.time()
-    hours = await database.fetch_all(query)
+    hours = await database.fetch_all(query, values)
     end = time.time()
     print("db lookup time: {} ms".format( round((end-start) * 1000, 2) ))
     output = []
@@ -161,7 +166,7 @@ async def refresh_hourly():
         value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
         output.append(value)
     
-    memcache["hourly"] = output
+    memcache["hourly={}".format(device_id)] = output
 
 def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
