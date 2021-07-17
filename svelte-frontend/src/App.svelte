@@ -4,6 +4,7 @@
 	import {OverallAQI} from './aqi_calculations';
 
 	let points = [];
+	let indoor_points = [];
 
 	let aqi = NaN;
 	let pm_1_0 = '';
@@ -49,6 +50,10 @@
 			console.log(data)
 			indoor_aqi = OverallAQI(data.pm_2_5, data.pm_10_0)
 		});
+
+		fetch('https://air.sebastianboyd.com/api/hourly/2')
+		.then(response => response.json())
+		.then(data => indoor_points = data);
 	}
 
 	fetch('https://air.sebastianboyd.com/api/current/1')
@@ -63,27 +68,20 @@
 <div class="container">
 	<h3>Outdoor AQI</h3>
 	<AQIMeter aqi={aqi}></AQIMeter>
+
 	{#if indoor_enabled}
 	<h3>Indoor AQI</h3>
 	<AQIMeter aqi={indoor_aqi}></AQIMeter>
 	{/if}
+
 	<h3>Outdoor AQI Last 24 Hours</h3>
 	<Bar data={points}></Bar>
-	<h3>Particulate Matter</h3>
-	<table>
-		<tr>
-			<td>PM 1.0</td>
-			<td>{pm_1_0} &mu;g/m&sup3;</td>
-		</tr>
-		<tr>
-			<td>PM 2.5</td>
-			<td>{pm_2_5} &mu;g/m&sup3;</td>
-		</tr>
-		<tr>
-			<td>PM 10.0</td>
-			<td>{pm_10_0} &mu;g/m&sup3;</td>
-		</tr>
-	</table>
+
+	{#if indoor_enabled}
+	<h3>Indoor AQI Last 24 Hours</h3>
+	<Bar data={indoor_points}></Bar>
+	{/if}
+
 </div>
 
 <style>
