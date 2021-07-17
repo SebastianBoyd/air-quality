@@ -92,18 +92,6 @@
 		font-display: swap;
 	}
 
-	table {
-		font-size: 1em;
-		margin-left: 32px;
-	}
-	td {
-		padding-right: 32px;
-	}
-/* 
-	.container {
-		font-family: 'Open Sans', sans-serif;
-	} */
-
 	.container {
 		margin-left: auto;
 		margin-right: auto;

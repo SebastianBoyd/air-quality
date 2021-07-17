@@ -75,16 +75,6 @@
 </div>
 
 <style>
-	h2 {
-		text-align: center;
-	}
-
-	/* .chart {
-		width: 100%;
-		max-width: 500px;
-		margin: 0 auto;
-	} */
-
 	svg {
 		position: relative;
 		width: 100%;
