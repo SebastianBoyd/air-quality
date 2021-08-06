@@ -11,9 +11,11 @@
 	let width = 500;
 	let height = 200;
 
-	$: xScale = scaleLinear()
-		.domain([0, data.length])
-		.range([padding.left, width - padding.right]);
+	let xScale = (value) => {
+		let start = padding.left;
+		let end = width - padding.right;
+		return (end - start) / data.length * value + start
+	} 
 
 	$: yScale = scaleLinear()
 		.domain([-0.5, max(data, d => d.aqi)])
