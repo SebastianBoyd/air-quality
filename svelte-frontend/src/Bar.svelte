@@ -57,6 +57,7 @@
 
 		<g class='bars'>
 			{#each data as d, i}
+				{#if d.aqi != null}
 				<rect
 					x="{xScale(i) + 2}"
 					y="{yScale(d.aqi) + padding.top}"
@@ -64,6 +65,7 @@
 					height="{height - padding.bottom - padding.top - yScale(d.aqi)}"
 					fill="{AQItoDesc(d.aqi).color}"
 				></rect>
+				{/if}
 			{/each}
 		</g>
 		<text transform="translate({innerWidth/2 + padding.left},{height - padding.bottom / 4})" 

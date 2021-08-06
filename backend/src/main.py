@@ -148,12 +148,21 @@ async def refresh_all_hourly():
 
 async def refresh_hourly(device_id):
     query = '''
-        SELECT date_trunc('hour', timestamp) datetime, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
-        FROM sensordata
-        WHERE timestamp >= NOW() - '1 day'::INTERVAL
-        AND device_id = :device_id
-        GROUP BY date_trunc('hour', timestamp)
-        ORDER BY date_trunc('hour', timestamp);
+        SELECT *
+        FROM  (
+        SELECT date_trunc('hour', date) date
+        FROM   generate_series((NOW() - '1 day'::INTERVAL)
+                                , NOW()
+                                , interval  '1 hour') date
+        ) d
+        LEFT   JOIN (
+            SELECT date_trunc('hour', timestamp) date, ROUND(AVG(pm_1_0), 2) pm_1_0, ROUND(AVG(pm_2_5), 2) pm_2_5, ROUND(AVG(pm_10_0), 2) pm_10_0
+            FROM sensordata
+            WHERE timestamp >= NOW() - '1 day'::INTERVAL
+            AND device_id = :device_id
+            GROUP BY date_trunc('hour', timestamp)
+        ) t USING (date)
+        ORDER  BY date;
     '''
     values = {'device_id': device_id}
     start = time.time()
@@ -161,10 +170,11 @@ async def refresh_hourly(device_id):
     end = time.time()
     print("db lookup time: {} ms".format( round((end-start) * 1000, 2) ))
     output = []
+
     for h in hours:
         value = {}
-        value['aqi'] = max(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
-        utc_time = h['datetime']
+        value['aqi'] = NoneMax(AQI_PM_2_5(h['pm_2_5']), AQI_PM_10(h['pm_10_0']))
+        utc_time = h['date']
         tz = pytz.timezone("America/Los_Angeles")
         value['hour'] = utc_time.astimezone(tz).hour
         output.append(value)
@@ -175,7 +185,13 @@ def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
     return round(a)
 
+def NoneMax(a, b):
+    if a == None: return b
+    if b == None: return a
+    return max(a, b)
+
 def AQI_PM_2_5(concentration):
+    if concentration == None: return None
     c = (math.floor(10 * concentration)) / 10
     if (c >= 0 and c < 12.1):
         AQI = linear(50, 0, 12, 0, c)
@@ -196,6 +212,7 @@ def AQI_PM_2_5(concentration):
     return AQI
 
 def AQI_PM_10(concentration):
+    if concentration == None: return None
     c = math.floor(concentration)
     if (c >= 0 and c < 55):
         AQI = linear(50, 0, 54, 0, c)
