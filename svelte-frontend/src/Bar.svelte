@@ -1,5 +1,5 @@
 <script>
-	import { scaleLinear, max } from 'd3';
+	import { scaleLinear } from 'd3';
 	import {AQItoDesc} from './aqi_calculations';
 
 	export let data;
@@ -17,10 +17,14 @@
 		return (end - start) / data.length * value + start
 	} 
 
+	let max = (list, fn) => {
+		return Math.max(...list.map(fn))
+	}
+
 	$: yScale = scaleLinear()
 		.domain([-0.5, max(data, d => d.aqi)])
 		.range([height - padding.top - padding.bottom, padding.top]);
-	
+
 	$: xTicks = data.map(d => d.hour);
 	
 	$: yTicks = yScale.ticks();
