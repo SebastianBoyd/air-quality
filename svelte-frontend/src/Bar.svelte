@@ -1,5 +1,4 @@
 <script>
-	import { scaleLinear } from 'd3';
 	import {AQItoDesc} from './aqi_calculations';
 
 	export let data;
@@ -21,13 +20,28 @@
 		return Math.max(...list.map(fn))
 	}
 
-	$: yScale = scaleLinear()
-		.domain([-0.5, max(data, d => d.aqi)])
-		.range([height - padding.top - padding.bottom, padding.top]);
+	$: yDomain = [-0.5, max(data, d => d.aqi)]
+
+	let yScale = (value) => {
+		let start = height - padding.top - padding.bottom;
+		let end = padding.top;
+		return (end - start) / (yDomain[1] - yDomain[0]) * (value - yDomain[0]) + start 
+	} 
 
 	$: xTicks = data.map(d => d.hour);
 	
-	$: yTicks = yScale.ticks();
+	let setTicks = (max) => {
+		if (max < 0) {
+			return []
+		}
+		const step_goal = max / 10
+		const possibleSteps = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000]
+		const step = possibleSteps.reduce((prev, curr) => Math.abs(curr - step_goal) < Math.abs(prev - step_goal) ? curr : prev);
+		const num_steps = Math.round(max / step) + 1;
+		return Array.from(new Array(num_steps), (x, i) => i * step);
+	}
+
+	$: yTicks = setTicks(yDomain[1]);
 
 	$: innerWidth = width - (padding.left + padding.right);
 	$: barWidth = innerWidth / data.length;
