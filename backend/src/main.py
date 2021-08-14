@@ -75,9 +75,9 @@ async def test():
 @app.get("/current/{device_id}")
 async def current_usage(device_id: str):
     if device_id == '1':
-        url = "http://thoughtless.duckdns.org/json"
+        url = "http://pacific.sebastianboyd.com/json"
     elif device_id == '2':
-        url = "http://thoughtless.duckdns.org:8626/json"
+        url = "http://pacific.sebastianboyd.com:8626/json"
     else:
         raise HTTPException(status_code=404, detail="device does not exist")
     return await read_sensor(url)
@@ -117,8 +117,8 @@ async def read_sensor(url):
           print('Connection Error', str(e))
 
 async def store_all():
-    await store_values("http://thoughtless.duckdns.org/json", 1)
-    await store_values("http://thoughtless.duckdns.org:8626/json", 2)
+    await store_values("http://pacific.sebastianboyd.com/json", 1)
+    await store_values("http://pacific.sebastianboyd.com:8626/json", 2)
 
 async def store_values(url, device_id):
     result = await read_sensor(url)
