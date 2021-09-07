@@ -1,6 +1,8 @@
 <script>
 	import AQIMeter from './AQIMeter.svelte';
 	import Bar from './Bar.svelte';
+	import Calendar from './Calendar.svelte';
+
 	import {OverallAQI} from './aqi_calculations';
 
 	let points = [];
@@ -66,6 +68,7 @@
 </script>
 
 <div class="container">
+	<Calendar />
 	<h3>Outdoor AQI</h3>
 	<AQIMeter aqi={aqi}></AQIMeter>
 
