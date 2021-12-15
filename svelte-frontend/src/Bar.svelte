@@ -139,5 +139,15 @@
 
 	.axis-label {
 		font-weight: 300;
+		fill: currentColor;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.tick text {
+			fill: #d1d1d1;
+		}
+		.y-axis .tick line {
+			fill: #7e7e7e;
+		}
 	}
 </style>
