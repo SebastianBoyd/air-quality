@@ -45,7 +45,7 @@ WiFiClientSecure https;
 const char* db_name = "sensor_data";
 const char* db_key = "55a438a31c8d7fc473acf2a6f1c4df60";
 
-const char* DEVICE_ID = "1";
+const char* DEVICE_ID = "2";
 
 int counter = 0;
 
@@ -113,33 +113,33 @@ void sendData(float temperature, float humidity, float pressure, int pm_1_0,
 
 void setup() {
   Serial.begin(9600);  // GPIO2 (D4 pin on ESP-12E Development Board)
-  Serial.println("\nStarting...");
-  Serial.setDebugOutput(true);
+  // Serial.println("\nStarting...");
+  // Serial.setDebugOutput(true);
   // WiFi.disconnect();
-  wifiManager.autoConnect("Air-Quality");
+  wifiManager.autoConnect("Air-Quality2");
   setupHttpServer();
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  // Serial.println("IP address: ");
+  // Serial.println(WiFi.localIP());
 
   // Synchronize time useing SNTP
-  Serial.print("Setting time using SNTP");
+  // Serial.print("Setting time using SNTP");
   configTime(8 * 3600, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
     delay(500);
-    Serial.print(".");
+    // Serial.print(".");
     now = time(nullptr);
   }
-  Serial.println("");
+  // Serial.println("");
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.print("Current time: ");
-  Serial.print(asctime(&timeinfo));
+  // Serial.print("Current time: ");
+  // Serial.print(asctime(&timeinfo));
 
   // Load root certificate in DER format into WiFiClientSecure object
   bool res = https.setCACert_P(DSTRootCAX3_crt, DSTRootCAX3_crt_len);
   if (!res) {
-    Serial.println("Failed to load root CA certificate!");
+    // Serial.println("Failed to load root CA certificate!");
     while (true) {
       yield();
     }
@@ -150,28 +150,29 @@ void setup() {
   ArduinoOTA.setPassword("esp8266");
 
   ArduinoOTA.onStart([]() {
-    Serial.println("Start");
+    // Serial.println("Start");
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
+    // Serial.println("\nEnd");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    // Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
   });
   ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    // Serial.printf("Error[%u]: ", error);
+    // if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    // else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    // else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    // else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    // else if (error == OTA_END_ERROR) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-  Serial.println("OTA ready");
+  // Serial.println("OTA ready");
 
   Wire.begin();  // initialize I2C that connects to sensor
   BMESensor.begin();
-  pms.passiveMode();
+  // pms.passiveMode();
+  // pms.wakeUp();
 }
 
 void loop() {
@@ -185,29 +186,29 @@ void loop() {
     Serial.print("PM 10.0 (ug/m3): ");
     Serial.println(data.PM_AE_UG_10_0);
 
-    BMESensor.refresh();  // read current sensor data
-    Serial.print("Temperature: ");
-    Serial.print(BMESensor.temperature);  // display temperature in Celsius
-    Serial.print("C / ");
-    Serial.print(BMESensor.temperature * 1.8 +
-                 32);  // display temperature in Celsius
-    Serial.println("F");
+    // BMESensor.refresh();  // read current sensor data
+    // Serial.print("Temperature: ");
+    // Serial.print(BMESensor.temperature);  // display temperature in Celsius
+    // Serial.print("C / ");
+    // Serial.print(BMESensor.temperature * 1.8 +
+    //              32);  // display temperature in Celsius
+    // Serial.println("F");
 
-    Serial.print("Humidity:    ");
-    Serial.print(BMESensor.humidity);  // display humidity in %
-    Serial.println("%");
+    // Serial.print("Humidity:    ");
+    // Serial.print(BMESensor.humidity);  // display humidity in %
+    // Serial.println("%");
 
-    Serial.print("Pressure:    ");
-    Serial.print(BMESensor.pressure / 100.0F);  // display pressure in hPa
-    Serial.println("hPa");
+    // Serial.print("Pressure:    ");
+    // Serial.print(BMESensor.pressure / 100.0F);  // display pressure in hPa
+    // Serial.println("hPa");
 
     float relativepressure = BMESensor.seaLevelForAltitude(MYALTITUDE) / 100.0F;
-    Serial.print("RelPress:    ");
-    Serial.print(relativepressure);  // display relative pressure in hPa for
-                                     // given altitude
-    Serial.println("hPa");
+    // Serial.print("RelPress:    ");
+    // Serial.print(relativepressure);  // display relative pressure in hPa for
+    //                                  // given altitude
+    // Serial.println("hPa");
 
-    Serial.println();
+    // Serial.println();
 
     AVG_PM_SP_UG_1_0 = exp_avg(AVG_PM_SP_UG_1_0, (float)data.PM_AE_UG_1_0);
     AVG_PM_AE_UG_2_5 = exp_avg(AVG_PM_AE_UG_2_5, (float)data.PM_AE_UG_2_5);
@@ -219,7 +220,7 @@ void loop() {
     counter++;
     if (counter >= 10) {
       counter = 0;
-      Serial.println("SEND DATA");
+      // Serial.println("SEND DATA");
       // sendDataToCorlysis(AVG_TEMPRATURE, AVG_HUMIDITY, AVG_PRESSURE_ADJ,
       // round(AVG_PM_SP_UG_1_0), round(AVG_PM_AE_UG_2_5),
       // round(AVG_PM_AE_UG_10_0));
