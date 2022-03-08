@@ -122,6 +122,9 @@ async def store_all():
 
 async def store_values(url, device_id):
     result = await read_sensor(url)
+    if result is None:
+        print("Failed to load data")
+        return
     print(result.get('temp'))
     values = {
         "timestamp": datetime.datetime.now(),
