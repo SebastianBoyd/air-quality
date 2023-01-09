@@ -92,7 +92,7 @@ async def check_ip(request: Request):
 
 @app.get("/indoor_allowed")
 async def indoor_allowed(request: Request):
-    allowed_ips = ["127.0.0.1", "192.168.1.1", "98.37.4.219", "67.182.22.207"]
+    allowed_ips = ["127.0.0.1", "192.168.1.1", "98.37.4.219", "98.234.210.36"]
     return request.client.host in allowed_ips
 
 async def check_last_entry_time():
