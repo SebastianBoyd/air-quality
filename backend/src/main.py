@@ -75,7 +75,7 @@ async def test():
 @app.get("/current/{device_id}")
 async def current_usage(device_id: str):
     if device_id == '1':
-        url = "http://pacific.sebastianboyd.com/json"
+        url = "http://pacific.sebastianboyd.com:8717/json"
     elif device_id == '2':
         url = "http://pacific.sebastianboyd.com:8626/json"
     else:
