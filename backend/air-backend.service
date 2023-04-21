@@ -1,0 +1,19 @@
+[Unit]
+Description=Uvicorn systemd service.
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/home/data/air-quality/backend/.venv/bin/uvicorn main:app --port 8000 --host 0.0.0.0
+User=data
+WorkingDirectory=/home/data/air-quality/backend/src
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+RestartSec=1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
