@@ -50,7 +50,7 @@ async def startup_event():
     scheduler.add_job(store_all, 'interval', minutes=5,
                       id='sensor_schedule', next_run_time=run_time)
     scheduler.add_job(refresh_all_hourly, 'interval', minutes=1,
-                      id='refresh_all_hourly_schedule', next_run_time=datetime.datetime.now())
+                      id='refresh_all_hourly_schedule', next_run_time=datetime.datetime.now(datetime.timezone.utc))
 
 
 @app.on_event("shutdown")
@@ -183,7 +183,7 @@ async def refresh_hourly(device_id):
 
         result = await conn.execute(query)
         data = result.fetchall()
-        result_hours = {datetime.datetime.strptime(item[0], format_string).replace(tzinfo=datetime.UTC): (item[1], item[2]) for item in data}
+        result_hours = {datetime.datetime.strptime(item[0], format_string).replace(tzinfo=datetime.timezone.utc): (item[1], item[2]) for item in data}
 
     out_timezone = "America/Los_Angeles"
     timestamps = [twenty_four_hours_ago + datetime.timedelta(hours=i) for i in range(25)]
