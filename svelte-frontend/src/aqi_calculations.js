@@ -4,7 +4,7 @@ function AQIpercent(AQI, rangeStart, rangeEnd) {
 
 export function AQItoDesc(AQI) {
   let data = {}
-  if (isNaN(AQI)) {
+  if (isNaN(AQI) || AQI === null) {
     data.text = "Loading...";
     data.color = "#d1d1d1";
     data.percent = 0;

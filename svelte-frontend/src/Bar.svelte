@@ -3,8 +3,6 @@
 
 	export let data;
 
-// 	const xTicks = points.map(d => d.year);
-// 	const yTicks = extent(points, d => d.birthrate);
 	const padding = { top: 10, right: 20, bottom: 40, left: 40 };
 
 	let width = 500;
