@@ -5,9 +5,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import database_startup, engine, sensordata
 import sqlalchemy as sqa
 import aiohttp
-import datetime
+from datetime import datetime, timedelta, timezone
 import math
-import time
 import pytz
 
 scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 30},)
@@ -39,18 +38,22 @@ async def startup_event():
 
     update_time = await check_last_entry_time()
 
-    if update_time == None or update_time < datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5):
+    if update_time == None or update_time < datetime.now(timezone.utc) - timedelta(minutes=5):
         print("update more than 5 minutes ago")
-        run_time = datetime.datetime.now()
+        run_time = datetime.now()
     else:
-        print("update less than 5, minutes ago")
-        run_time = update_time + datetime.timedelta(minutes=5)
+        print("update less than 5 minutes ago")
+        run_time = update_time + timedelta(minutes=5)
         run_time = run_time.replace(tzinfo=pytz.utc)
 
     scheduler.add_job(store_all, 'interval', minutes=5,
                       id='sensor_schedule', next_run_time=run_time)
     scheduler.add_job(refresh_all_hourly, 'interval', minutes=1,
-                      id='refresh_all_hourly_schedule', next_run_time=datetime.datetime.now(datetime.timezone.utc))
+                      id='refresh_all_hourly_schedule', next_run_time=datetime.now(timezone.utc))
+    scheduler.add_job(refresh_all_daily, 'interval', hours=1,
+                      id='refresh_all_daily_schedule', next_run_time=datetime.now(timezone.utc))
+    
+    await refresh_daily(1)
 
 
 @app.on_event("shutdown")
@@ -61,7 +64,7 @@ async def shutdown():
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World2"}
+    return {"message": "Hello World"}
 
 
 @app.get("/test")
@@ -86,7 +89,11 @@ async def current_usage(device_id: str):
 
 @app.get("/hourly/{device_id}")
 async def hourly(device_id: int):
-    return memcache["hourly={}".format(device_id)]
+    return memcache["hourly-{}".format(device_id)]
+
+@app.get("/daily/{device_id}")
+async def daily(device_id: int):
+    return memcache["daily-{}".format(device_id)]
 
 
 @app.get("/check_ip")
@@ -108,13 +115,12 @@ async def check_last_entry_time():
         latest_value = result.fetchone()
     if latest_value == None:
         return None
-    print(latest_value)
-    return latest_value[0].replace(tzinfo=datetime.timezone.utc)
+    return latest_value[0].replace(tzinfo=timezone.utc)
 
 
 async def read_sensor(url):
     print("attempting to read sensor data now ({})".format(
-        datetime.datetime.now(datetime.timezone.utc)))
+        datetime.now(timezone.utc)))
 
     try:
         async with http_session.get(url) as response:
@@ -140,7 +146,7 @@ async def store_values(url, device_id):
         return
     print(result.get('temp'))
     values = {
-        "timestamp": datetime.datetime.now(datetime.timezone.utc),
+        "timestamp": datetime.now(timezone.utc),
         "device_id": device_id,
         "temperature": result.get('temp'),
         "humidity": result.get('humidity'),
@@ -155,49 +161,98 @@ async def store_values(url, device_id):
         await conn.execute(query)
         await conn.commit()
 
+def get_all_device_ids():
+    # Will be more complex when we support more devices
+    return [1, 2]
 
 async def refresh_all_hourly():
-    await refresh_hourly(1)
-    await refresh_hourly(2)
+    for device_id in get_all_device_ids():
+        await refresh_hourly(device_id)
+
+async def refresh_all_daily():
+    for device_id in get_all_device_ids():
+        await refresh_daily(device_id)
+
+async def avg_sensor_data(format_string, sensordata, device_id, time_range, time_now, offset_string=None):
+    async with engine.connect() as conn:
+        query = sqa.select(
+                sqa.func.strftime(format_string,
+                                sqa.func.datetime(sensordata.c.timestamp, offset_string) if offset_string
+                                else sensordata.c.timestamp).label("time"),
+                sqa.func.avg(sensordata.c.pm_2_5).label("avg_pm_2_5"),
+                sqa.func.avg(sensordata.c.pm_10_0).label("avg_pm_10_0")
+            ) \
+            .where(sensordata.c.timestamp.between(time_range, time_now) & (sensordata.c.device_id == device_id)) \
+            .group_by("time") \
+            .order_by("time")
+        
+        results = await conn.execute(query)
+        data = results.fetchall()
+        
+        return data
 
 async def refresh_hourly(device_id):
-
-    async with engine.connect() as conn:
-        twenty_four_hours_ago = datetime.datetime.now(
-            datetime.timezone.utc) - datetime.timedelta(hours=24)
-        
-        format_string = "%Y-%m-%d %H:00:00"
-
-        query = (
-            sqa.select(
-                sqa.func.strftime(format_string, sensordata.c.timestamp).label("hour"),
-                sqa.func.avg(sensordata.c.pm_2_5).label("avg_pm_2_5"),
-                sqa.func.avg(sensordata.c.pm_10_0).label("avg_pm_10_0"),
-            )
-            .where(sqa.and_(sensordata.c.timestamp >= twenty_four_hours_ago, 
-                            sensordata.c.timestamp <= datetime.datetime.now(datetime.timezone.utc),
-                            sensordata.c.device_id == device_id))
-            .group_by(sqa.func.strftime(format_string, sensordata.c.timestamp))
-            .order_by(sqa.func.strftime(format_string, sensordata.c.timestamp))
-        )
-
-        result = await conn.execute(query)
-        data = result.fetchall()
-        result_hours = {datetime.datetime.strptime(item[0], format_string).replace(tzinfo=datetime.timezone.utc): (item[1], item[2]) for item in data}
-
-    out_timezone = "America/Los_Angeles"
-    timestamps = [twenty_four_hours_ago + datetime.timedelta(hours=i) for i in range(25)]
-    timestamps = [ts.replace(minute=0, second=0, microsecond=0) for ts in timestamps]
-    filled_data = []
-    for ts in timestamps:
-        out_ts = ts.astimezone(pytz.timezone(out_timezone))
-        if ts in result_hours:
-            aqi = NoneMax(AQI_PM_2_5(result_hours[ts][0]), AQI_PM_10(result_hours[ts][1]))
-            filled_data.append({"hour": out_ts.hour, "aqi": aqi})
-        else:
-            filled_data.append({"hour": out_ts.hour, "aqi": None})
     
-    memcache["hourly={}".format(device_id)] = filled_data
+    timezone_name = "America/Los_Angeles"
+    local_timezone = pytz.timezone(timezone_name)
+    utc_offset = datetime.now(local_timezone).utcoffset()
+    offset_string = f"{int(utc_offset.total_seconds() / 60)} minutes"
+    
+    format_string = "%Y-%m-%d %H:00:00"
+
+    hours_range = 24        
+    time_now = datetime.now(timezone.utc)        
+    time_range = time_now - timedelta(hours=hours_range)
+
+    data = await avg_sensor_data(format_string, sensordata, device_id, time_range, time_now, offset_string)
+        
+    result_hours = {datetime.strptime(item[0], format_string).replace(tzinfo=timezone.utc): (item[1], item[2]) for item in data}
+         
+    time_range_local = time_range.astimezone(local_timezone).replace(minute=0, second=0, microsecond=0)
+    timestamps = [(time_range_local + timedelta(hours=i)) for i in range(1, hours_range + 1)]
+
+    filled_data = [
+        {
+            "hour": ts.hour,
+            "aqi": NoneMax(AQI_PM_2_5(result_hours[ts][0]), AQI_PM_10(result_hours[ts][1]))
+            if ts in result_hours
+            else None
+        }
+        for ts in timestamps
+    ]
+
+    memcache["hourly-{}".format(device_id)] = filled_data
+
+async def refresh_daily(device_id):
+    timezone_name = 'America/Los_Angeles'
+    local_timezone = pytz.timezone(timezone_name)
+    utc_offset = datetime.now(local_timezone).utcoffset()
+    offset_string = f"{int(utc_offset.total_seconds() / 60)} minutes"
+    format_string = "%Y-%m-%d"
+
+    days_range = 7
+    time_now = datetime.now(timezone.utc)
+    time_range = time_now - timedelta(days=days_range)
+
+
+    data = await avg_sensor_data(format_string, sensordata, device_id, time_range, time_now, offset_string)
+    
+    result_days = {datetime.strptime(item[0], format_string): (item[1], item[2]) for item in data}
+    
+    time_range_local = time_range.astimezone(local_timezone).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    timestamps = [(time_range_local + timedelta(days=i)) for i in range(1, days_range + 1)]
+
+    filled_data = [
+        {
+            "day": ts.day,
+            "aqi": max(AQI_PM_2_5(result_days[ts][0]), AQI_PM_10(result_days[ts][1]))
+            if ts in result_days
+            else None,
+        }
+        for ts in timestamps
+    ]
+
+    memcache["daily-{}".format(device_id)] = filled_data
 
 def linear(AQIhigh, AQIlow, Conchigh, Conclow, Concentration):
     a = ((Concentration - Conclow) / (Conchigh - Conclow)) * (AQIhigh - AQIlow) + AQIlow
