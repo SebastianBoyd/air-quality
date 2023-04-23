@@ -52,8 +52,7 @@ async def startup_event():
                       id='refresh_all_hourly_schedule', next_run_time=datetime.now(timezone.utc))
     scheduler.add_job(refresh_all_daily, 'interval', hours=1,
                       id='refresh_all_daily_schedule', next_run_time=datetime.now(timezone.utc))
-    
-    await refresh_daily(1)
+
 
 
 @app.on_event("shutdown")
@@ -195,8 +194,6 @@ async def refresh_hourly(device_id):
     
     timezone_name = "America/Los_Angeles"
     local_timezone = pytz.timezone(timezone_name)
-    utc_offset = datetime.now(local_timezone).utcoffset()
-    offset_string = f"{int(utc_offset.total_seconds() / 60)} minutes"
     
     format_string = "%Y-%m-%d %H:00:00"
 
@@ -204,7 +201,7 @@ async def refresh_hourly(device_id):
     time_now = datetime.now(timezone.utc)        
     time_range = time_now - timedelta(hours=hours_range)
 
-    data = await avg_sensor_data(format_string, sensordata, device_id, time_range, time_now, offset_string)
+    data = await avg_sensor_data(format_string, sensordata, device_id, time_range, time_now)
         
     result_hours = {datetime.strptime(item[0], format_string).replace(tzinfo=timezone.utc): (item[1], item[2]) for item in data}
          
