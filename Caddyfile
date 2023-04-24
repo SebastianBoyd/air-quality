@@ -1,5 +1,7 @@
 https://air.sebastianboyd.com {
 
+  header Cache-Control "max-age=3600, must-revalidate"
+
   file_server browse {
     root /mnt/media/air-quality/svelte-frontend/public
   }
