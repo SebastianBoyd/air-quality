@@ -1,15 +1,19 @@
 https://air.sebastianboyd.com {
-
-  header {
-    Cache-Control "max-age=3600, must-revalidate"
-  }
-
   file_server browse {
     root /home/data/air-quality/svelte-frontend/public
   }
 
   route /api/* {
-      uri strip_prefix api
-      reverse_proxy  localhost:8000
+    uri strip_prefix api
+    reverse_proxy localhost:8000
   }
+
+  @notApi {
+    not {
+      path /api/*
+    }
+  }
+
+  header /api/* Cache-Control "no-cache, no-store, must-revalidate" # Set Cache-Control for API
+  header @notApi Cache-Control "max-age=3600, must-revalidate"
 }
