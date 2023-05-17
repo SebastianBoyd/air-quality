@@ -10,3 +10,6 @@ env/
 example/
 postgres-data/
 caddy-data/
+*.db
+*.pyc
+.DS_Store
