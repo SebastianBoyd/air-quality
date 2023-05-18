@@ -24,5 +24,5 @@ async def init_tables():
         await conn.run_sync(metadata.create_all)
 
 
-loop = asyncio.get_event_loop()
-database_startup = loop.create_task(init_tables())
+# loop = asyncio.get_event_loop()
+# database_startup = loop.create_task(init_tables())
