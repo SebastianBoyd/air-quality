@@ -1,3 +1,4 @@
+import socket
 from database import init_tables
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,9 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+allowed_ips = ["127.0.0.1", "98.234.210.36"]
 
 @app.on_event("startup")
 async def startup_event():
+    hostname = "pacific.sebastianboyd.com"
+    ip_address = socket.gethostbyname(hostname)
+    allowed_ips.append(ip_address)
     await init_tables()
     await setup_jobs()
 
@@ -63,5 +68,4 @@ async def check_ip(request: Request):
 
 @app.get("/indoor_allowed")
 async def indoor_allowed(request: Request):
-    allowed_ips = ["127.0.0.1", "192.168.1.1", "98.37.4.219", "98.234.210.36"]
     return request.client.host in allowed_ips
