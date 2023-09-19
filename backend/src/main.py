@@ -68,4 +68,7 @@ async def check_ip(request: Request):
 
 @app.get("/indoor_allowed")
 async def indoor_allowed(request: Request):
-    return request.client.host in allowed_ips
+    x_forwarded_for = request.headers.get("X-Forwarded-For")
+    if not x_forwarded_for:
+        return True
+    return x_forwarded_for.split(",")[0] in allowed_ips
