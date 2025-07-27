@@ -1,12 +1,13 @@
 import socket
 from database import init_tables
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from schedule import setup_jobs, stop_jobs
 from refresh_data import read_sensor
 from query import hourly_aqi, daily_aqi
 
 app = FastAPI()
+router = APIRouter(prefix="/api")
 
 # memcache = {'hourly-1': None, 'hourly-2': None}
 
@@ -37,12 +38,12 @@ async def shutdown():
     print('shutdown')
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/current/{device_id}")
+@router.get("/current/{device_id}")
 async def current_usage(device_id: str):
     if device_id == '1':
         url = "http://pacific.sebastianboyd.com:8717/json"
@@ -53,22 +54,24 @@ async def current_usage(device_id: str):
     return await read_sensor(url)
 
 
-@app.get("/hourly/{device_id}")
+@router.get("/hourly/{device_id}")
 async def hourly(device_id: int):
     return await hourly_aqi(device_id)
 
-@app.get("/daily/{device_id}")
+@router.get("/daily/{device_id}")
 async def daily(device_id: int):
     return await daily_aqi(device_id)
 
-@app.get("/check_ip")
+@router.get("/check_ip")
 async def check_ip(request: Request):
     return request.client.host
 
 
-@app.get("/indoor_allowed")
+@router.get("/indoor_allowed")
 async def indoor_allowed(request: Request):
     x_forwarded_for = request.headers.get("X-Forwarded-For")
     if not x_forwarded_for:
         return True
     return x_forwarded_for.split(",")[0] in allowed_ips
+
+app.include_router(router)

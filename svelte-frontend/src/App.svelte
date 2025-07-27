@@ -15,16 +15,16 @@
 	let indoor_enabled = getLocalStorageBool("indoor_enabled");
 
 	if (!indoor_enabled) {
-		updateIndoorEnabled("https://air.sebastianboyd.com/api/indoor_allowed");
+		updateIndoorEnabled("/api/indoor_allowed");
 	}
 
 	const urls = {
-		outdoorCurrent: "https://air.sebastianboyd.com/api/current/1",
-		outdoorHourly: "https://air.sebastianboyd.com/api/hourly/1",
-		outdoorDaily: "https://air.sebastianboyd.com/api/daily/1",
-		indoorCurrent: "https://air.sebastianboyd.com/api/current/2",
-		indoorHourly: "https://air.sebastianboyd.com/api/hourly/2",
-		indoorDaily: "https://air.sebastianboyd.com/api/daily/2",
+		outdoorCurrent: "/api/current/1",
+		outdoorHourly: "/api/hourly/1",
+		outdoorDaily: "/api/daily/1",
+		indoorCurrent: "/api/current/2",
+		indoorHourly: "/api/hourly/2",
+		indoorDaily: "/api/daily/2",
 	};
 
 	loadOutdoorData();
