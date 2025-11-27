@@ -5,9 +5,9 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/data/air-quality/backend/.venv/bin/uvicorn main:app --port 8000 --host 0.0.0.0
-User=data
-WorkingDirectory=/home/data/air-quality/backend/src
+ExecStart=/home/sebastian/.local/bin/uv run uvicorn main:app --port 8110 --host 0.0.0.0
+User=sebastian
+WorkingDirectory=/home/sebastian/systemd-deployed/air-quality/backend/src
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5
