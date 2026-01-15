@@ -6,6 +6,12 @@ export default defineConfig({
   plugins: [devtools(), solidPlugin()],
   server: {
     port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://air.sebastianboyd.com',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     target: 'esnext',
