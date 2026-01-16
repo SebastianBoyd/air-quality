@@ -17,7 +17,7 @@ const AQIMeter: Component<AQIMeterProps> = (props) => {
             }}
         >
             <span class="aqi_text">
-                {aqiDescription().text} {isNaN(props.aqi) ? '' : props.aqi}
+                {isNaN(props.aqi) ? 'Loading...' : aqiDescription().text} {isNaN(props.aqi) ? '' : props.aqi}
             </span>
             <div class="meter">
                 <div

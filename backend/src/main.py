@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from schedule import setup_jobs, stop_jobs
 from refresh_data import read_sensor
-from query import hourly_aqi, daily_aqi
+from query import hourly_aqi, daily_aqi, get_monthly_data
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
@@ -61,6 +61,10 @@ async def hourly(device_id: int):
 @router.get("/daily/{device_id}")
 async def daily(device_id: int):
     return await daily_aqi(device_id)
+
+@router.get("/monthly/{year}")
+async def monthly(year: int, device_id: int):
+    return await get_monthly_data(device_id, year)
 
 @router.get("/check_ip")
 async def check_ip(request: Request):

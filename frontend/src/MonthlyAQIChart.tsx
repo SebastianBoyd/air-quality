@@ -1,87 +1,76 @@
-import { Component, createMemo, For } from 'solid-js';
-import { AQItoDesc } from './aqi_calculations';
+import { Component, createResource, For, Show } from 'solid-js';
+import { AQItoBucketId, BucketIdToColor } from './aqi_calculations';
 
 interface MonthlyData {
     monthIndex: number; // 0-11
     daysTotal: number;
     distribution: {
-        representativeAqi: number; // Representative AQI for color
+        color: string;
         count: number;
     }[];
 }
 
-const MonthlyAQIChart: Component = () => {
-    // Defines buckets from Worst to Best to match the image (Left=Bad, Right=Good)
-    // Representative AQI values used to fetch color from AQItoDesc
-    const buckets = [
-        { label: 'Apocalyptic', aqi: 600 },
-        { label: 'Super Hazardous', aqi: 450 },
-        { label: 'Hazardous', aqi: 350 },
-        { label: 'Very Unhealthy', aqi: 250 },
-        { label: 'Unhealthy', aqi: 175 },
-        { label: 'Unhealthy for Sensitive Groups', aqi: 125 },
-        { label: 'Moderate', aqi: 75 },
-        { label: 'Good', aqi: 40 },
-        { label: 'Very Good', aqi: 10 },
-        { label: 'No Data', aqi: NaN },
-    ];
 
+interface MonthlyAQIChartProps {
+    year: number;
+}
+
+const fetchMonthlyData = async (year: number) => {
+    // using relative path /api which proxies to backend
+    const response = await fetch(`/api/monthly/${year}?device_id=1`);
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    return response.json();
+};
+
+const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
     const getDaysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    // Generate fake data
-    const data = createMemo(() => {
-        const year = 2023;
+    const [dailyData] = createResource(() => props.year, fetchMonthlyData);
+
+
+    const processedData = () => {
+        const rawData = dailyData();
+        if (!rawData) return [];
+
+        const year = props.year;
         const result: MonthlyData[] = [];
+
+        // Group raw data by month
+        // rawData is list of { date: string, aqi: number | null }
+        const dataByMonth: Record<number, { aqi: number | null }[]> = {};
+        for (let i = 0; i < 12; i++) dataByMonth[i] = [];
+
+        rawData.forEach((item: any) => {
+            const parts = item.date.split('-');
+            const m = parseInt(parts[1], 10) - 1;
+            if (dataByMonth[m]) {
+                dataByMonth[m].push(item);
+            }
+        });
 
         for (let m = 0; m < 12; m++) {
             const daysInMonth = getDaysInMonth(m, year);
-            // Determine days with no data (some months might have missing data)
-            const noDataCount = Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 1 : 0;
-            let daysRemaining = daysInMonth - noDataCount;
-            const distribution = [];
+            const monthData = dataByMonth[m] || [];
 
-            // Randomly distribute days into buckets
-            // We'll iterate buckets and take a random chunk
+            // Initialize bucket counts
+            const counts: Record<string, number> = {};
 
-            const validBuckets = buckets.filter(b => !Number.isNaN(b.aqi));
-            const noDataBucket = buckets.find(b => Number.isNaN(b.aqi));
+            monthData.forEach(day => {
+                const bucketIdx = AQItoBucketId(day.aqi);
+                counts[bucketIdx] = (counts[bucketIdx] || 0) + 1;
+            });
 
-            for (let i = 0; i < validBuckets.length; i++) {
-                if (daysRemaining === 0) {
-                    distribution.push({ representativeAqi: validBuckets[i].aqi, count: 0 });
-                    continue;
-                }
-
-                if (i === validBuckets.length - 1) {
-                    // Last valid bucket takes all remainder of valid days
-                    distribution.push({ representativeAqi: validBuckets[i].aqi, count: daysRemaining });
-                    daysRemaining = 0;
-                } else {
-                    const maxTake = Math.min(daysRemaining, 10);
-
-                    // Randomized distribution logic
-                    const r = Math.random();
-                    let take = 0;
-                    if (r > 0.3) {
-                        take = Math.floor(Math.random() * (maxTake + 1));
-                    }
-                    // Ensure we don't take more than remaining
-                    take = Math.min(take, daysRemaining);
-
-                    distribution.push({ representativeAqi: validBuckets[i].aqi, count: take });
-                    daysRemaining -= take;
-                }
+            console.log(counts);
+            const distribution: MonthlyData['distribution'] = [];
+            for (const key of Object.keys(counts).sort((a, b) => parseInt(b) - parseInt(a))) {
+                distribution.push({
+                    color: BucketIdToColor(parseInt(key)),
+                    count: counts[key]
+                });
             }
-
-            // Append No Data bucket at the end
-            if (noDataBucket) {
-                distribution.push({ representativeAqi: noDataBucket.aqi, count: noDataCount });
-            }
-
-            // The straightforward random above implies order dependency. 
-            // Let's refine: The image has contiguous blocks.
-            // My loop produces contiguous blocks.
 
             result.push({
                 monthIndex: m,
@@ -90,24 +79,23 @@ const MonthlyAQIChart: Component = () => {
             });
         }
         return result;
-    });
+    };
 
     const padding = { top: 30, right: 40, bottom: 20, left: 20 };
     const rowHeight = 35;
     const gap = 4;
     const height = (rowHeight + gap) * 12 + padding.top + padding.bottom;
-    const width = 600; // Fixed width for SVG logic
+    const width = 600;
 
     const innerWidth = width - padding.left - padding.right;
 
     return (
-        <div class="chart-container" style={{ "margin-top": "20px" }}>
-            <h3>Monthly AQI Breakdown (2023)</h3>
-            <div class="chart" style={{ width: "100%", "max-width": "600px", height: `${height}px` }}>
-                <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "100%" }}>
-                    <text x={padding.left} y={20} font-size="20" font-weight="bold">Y2023</text>
+        <div class="chart" style={{ width: "100%", "max-width": "600px", height: `${height}px` }}>
+            <Show when={!dailyData.loading} fallback={<div>Loading...</div>}>
+                <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+                    <text x={padding.left} y={20} font-size="20" font-weight="bold">Y{props.year}</text>
 
-                    <For each={data()}>
+                    <For each={processedData()}>
                         {(month, i) => {
                             let xOffset = padding.left;
                             const y = padding.top + i() * (rowHeight + gap);
@@ -120,15 +108,16 @@ const MonthlyAQIChart: Component = () => {
                                             const w = bucket.count * dayWidth;
                                             const currentX = xOffset;
                                             xOffset += w;
-                                            return bucket.count > 0 ? (
+
+                                            return (
                                                 <rect
                                                     x={currentX}
                                                     y={y}
                                                     width={w}
                                                     height={rowHeight}
-                                                    fill={AQItoDesc(bucket.representativeAqi).color}
+                                                    fill={bucket.color}
                                                 />
-                                            ) : null;
+                                            )
                                         }}
                                     </For>
                                     {/* Month Label */}
@@ -144,7 +133,7 @@ const MonthlyAQIChart: Component = () => {
                         }}
                     </For>
                 </svg>
-            </div>
+            </Show>
         </div>
     );
 };

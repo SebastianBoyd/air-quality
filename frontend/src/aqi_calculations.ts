@@ -16,50 +16,64 @@ function AQIpercent(AQI: number, rangeStart: number, rangeEnd: number): number {
     return ((AQI - rangeStart) / (rangeEnd - rangeStart)) * 100;
 }
 
-export function AQItoDesc(AQI: number): AQIDescription {
+const AQI_LEVELS = [
+    { label: "Unknown", max: -1, color: "#d1d1d1" },
+    { label: "Very Good", max: 25, color: "#2196f3" },
+    { label: "Good", max: 50, color: "#4caf50" },
+    { label: "Moderate", max: 100, color: "#f9a825" },
+    { label: "Unhealthy for Sensitive Groups", max: 150, color: "#ff5722" },
+    { label: "Unhealthy", max: 200, color: "#ed2f21" },
+    { label: "Very Unhealthy", max: 300, color: "#9c27b0" },
+    { label: "Hazardous", max: 400, color: "#B22222" },
+    { label: "Super Hazardous", max: 499, color: "#800000" },
+    { label: "Apocalyptic", max: Infinity, color: "#000000" },
+];
+
+export function AQItoBucketId(AQI: number | null): number {
+    if (AQI === null) {
+        return 0;
+    }
+    for (let i = 0; i < AQI_LEVELS.length; i++) {
+        const level = AQI_LEVELS[i];
+        if (AQI <= level.max) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+export function BucketIdToColor(bucketIdx: number): string {
+    if (bucketIdx === 0) {
+        return "#d1d1d1";
+    }
+    return AQI_LEVELS[bucketIdx].color;
+}
+
+export function AQItoDesc(AQI: number | null): AQIDescription {
     let data = {} as AQIDescription;
-    if (isNaN(AQI) || AQI === null) {
+    if (AQI === null || isNaN(AQI)) {
         data.text = "No Data";
         data.color = "#d1d1d1";
         data.percent = 0;
-    } else if (AQI <= 25) {
-        data.text = "Very Good";
-        data.color = "#2196f3";
-        data.percent = AQIpercent(AQI, 0, 25);
-    } else if (AQI <= 50) {
-        data.text = "Good";
-        data.color = "#4caf50";
-        data.percent = AQIpercent(AQI, 25, 50);
-    } else if (AQI <= 100) {
-        data.text = "Moderate";
-        data.color = "#f9a825";
-        data.percent = AQIpercent(AQI, 50, 100);
-    } else if (AQI <= 150) {
-        data.text = "Unhealthy for Sensitive Groups";
-        data.color = "#ff5722";
-        data.percent = AQIpercent(AQI, 100, 150);
-    } else if (AQI <= 200) {
-        data.text = "Unhealthy";
-        data.color = "#ed2f21";
-        data.percent = AQIpercent(AQI, 150, 200);
-    } else if (AQI <= 300) {
-        data.text = "Very Unhealthy";
-        data.color = "#9c27b0";
-        data.percent = AQIpercent(AQI, 200, 300);
-    } else if (AQI <= 400) {
-        data.text = "Hazardous";
-        data.color = "#B22222";
-        data.percent = AQIpercent(AQI, 300, 400);
-    } else if (AQI < 500) {
-        data.text = "Super Hazardous";
-        data.color = "#800000";
-        data.percent = AQIpercent(AQI, 400, 500);
-    } else {
-        data.text = "Apocalyptic";
-        data.color = "#000000";
-        data.percent = 100;
+        return data;
     }
-    return data;
+
+    for (let i = 0; i < AQI_LEVELS.length; i++) {
+        const level = AQI_LEVELS[i];
+        if (AQI <= level.max) {
+            data.text = level.label;
+            data.color = level.color;
+            const prevMax = i === 0 ? 0 : AQI_LEVELS[i - 1].max;
+
+            if (level.label === "Apocalyptic") {
+                data.percent = 100;
+            } else {
+                data.percent = AQIpercent(AQI, prevMax, level.max);
+            }
+            return data;
+        }
+    }
+    return data; // Should not reach here due to Infinity
 }
 
 export function OverallAQI(pm_2_5: number, pm_10_0: number): number {

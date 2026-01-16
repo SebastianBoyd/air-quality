@@ -102,7 +102,8 @@ const App: Component = () => {
                 </Show>
             </Show>
 
-            <MonthlyAQIChart />
+            <h3>Monthly AQI (Outdoor)</h3>
+            <MonthlyAQIChart year={new Date().getFullYear()} />
         </div>
     );
 };

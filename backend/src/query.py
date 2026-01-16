@@ -98,3 +98,43 @@ async def daily_aqi(device_id):
     ]
 
     return filled_data
+
+async def get_monthly_data(device_id, year):
+    timezone_name = 'America/Los_Angeles'
+    local_timezone = pytz.timezone(timezone_name)
+    utc_offset = datetime.now(local_timezone).utcoffset()
+    offset_string = f"{int(utc_offset.total_seconds() / 60)} minutes"
+    format_string = "%Y-%m-%d"
+
+    # Start of year in local time
+    start_local = local_timezone.localize(datetime(year, 1, 1))
+    # Start of next year in local time
+    end_local = local_timezone.localize(datetime(year + 1, 1, 1))
+    
+    # Convert to UTC for database query
+    time_range = start_local.astimezone(timezone.utc)
+    time_limit = end_local.astimezone(timezone.utc)
+    
+    # Reuse avg_sensor_data logic. Note that time_now argument in avg_sensor_data is the stored upper bound.
+    data = await avg_sensor_data(format_string, sensordata, device_id, time_range, time_limit, offset_string)
+    
+    result_days = {datetime.strptime(item[0], format_string).date(): (item[1], item[2]) for item in data}
+    
+    # Generate complete list of days
+    current_date = start_local.date()
+    end_date = end_local.date()
+    
+    filled_data = []
+    while current_date < end_date:
+        aqi = None
+        if current_date in result_days:
+            pm25, pm10 = result_days[current_date]
+            aqi = overall_aqi(pm25, pm10)
+            
+        filled_data.append({
+            "date": current_date.strftime("%Y-%m-%d"),
+            "aqi": aqi
+        })
+        current_date += timedelta(days=1)
+        
+    return filled_data
