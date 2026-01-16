@@ -19,7 +19,7 @@ function AQIpercent(AQI: number, rangeStart: number, rangeEnd: number): number {
 export function AQItoDesc(AQI: number): AQIDescription {
     let data = {} as AQIDescription;
     if (isNaN(AQI) || AQI === null) {
-        data.text = "Loading...";
+        data.text = "No Data";
         data.color = "#d1d1d1";
         data.percent = 0;
     } else if (AQI <= 25) {

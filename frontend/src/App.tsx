@@ -3,6 +3,7 @@ import AQIMeter from "./AQIMeter";
 import Bar from "./Bar";
 import Circles from "./Circles";
 import { OverallAQI } from "./aqi_calculations";
+import MonthlyAQIChart from "./MonthlyAQIChart";
 
 const getLocalStorageBool = (key: string) => {
     try {
@@ -100,6 +101,8 @@ const App: Component = () => {
                     <Circles data={indoorDailyData()} />
                 </Show>
             </Show>
+
+            <MonthlyAQIChart />
         </div>
     );
 };
