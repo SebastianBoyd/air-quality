@@ -1,4 +1,4 @@
-import { Component, createResource, For, Show } from 'solid-js';
+import { Component, createResource, For, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { AQItoBucketId, BucketIdToColor } from './aqi_calculations';
 
 interface MonthlyData {
@@ -63,7 +63,6 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
                 counts[bucketIdx] = (counts[bucketIdx] || 0) + 1;
             });
 
-            console.log(counts);
             const distribution: MonthlyData['distribution'] = [];
             for (const key of Object.keys(counts).sort((a, b) => parseInt(b) - parseInt(a))) {
                 distribution.push({
@@ -85,49 +84,61 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
     const rowHeight = 35;
     const gap = 4;
     const height = (rowHeight + gap) * 12 + padding.top + padding.bottom;
-    const width = 600;
+    const [width, setWidth] = createSignal(600);
+    let containerRef: HTMLDivElement | undefined;
 
-    const innerWidth = width - padding.left - padding.right;
+    onMount(() => {
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.contentRect.width > 0) {
+                    setWidth(entry.contentRect.width);
+                }
+            }
+        });
+        if (containerRef) observer.observe(containerRef);
+        onCleanup(() => observer.disconnect());
+    });
+
+    const innerWidth = () => width() - padding.left - padding.right;
 
     return (
-        <div class="chart" style={{ width: "100%", "max-width": "600px", height: `${height}px` }}>
+        <div
+            ref={containerRef}
+            class="chart"
+            style={{ width: "100%", "max-width": "600px", height: `${height}px` }}
+        >
             <Show when={!dailyData.loading} fallback={<div>Loading...</div>}>
-                <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-                    <text x={padding.left} y={20} font-size="20" font-weight="bold">Y{props.year}</text>
+                <svg viewBox={`0 0 ${width()} ${height}`} preserveAspectRatio="xMidYMid meet">
+                    <text x={padding.left} y={20} class="axis-label" font-size="20" font-weight="600">
+                        Y{props.year}
+                    </text>
 
                     <For each={processedData()}>
                         {(month, i) => {
-                            let xOffset = padding.left;
                             const y = padding.top + i() * (rowHeight + gap);
-                            const dayWidth = innerWidth / month.daysTotal;
+                            const prefixCounts = month.distribution.map((bucket, idx) =>
+                                month.distribution.slice(0, idx).reduce((sum, entry) => sum + entry.count, 0)
+                            );
 
                             return (
                                 <g class={`month-row-${i()}`}>
                                     <For each={month.distribution}>
-                                        {(bucket) => {
-                                            const w = bucket.count * dayWidth;
-                                            const currentX = xOffset;
-                                            xOffset += w;
-
-                                            return (
-                                                <rect
-                                                    x={currentX}
-                                                    y={y}
-                                                    width={w}
-                                                    height={rowHeight}
-                                                    fill={bucket.color}
-                                                />
-                                            )
-                                        }}
+                                        {(bucket, j) => (
+                                            <rect
+                                                x={padding.left + prefixCounts[j()] * (innerWidth() / month.daysTotal)}
+                                                y={y}
+                                                width={bucket.count * (innerWidth() / month.daysTotal)}
+                                                height={rowHeight}
+                                                fill={bucket.color}
+                                            />
+                                        )}
                                     </For>
                                     {/* Month Label */}
-                                    <text
-                                        x={padding.left + innerWidth + 5}
-                                        y={y + rowHeight / 2 + 5}
-                                        font-size="14"
-                                    >
-                                        {monthNames[month.monthIndex]}
-                                    </text>
+                                    <g class="tick">
+                                        <text x={padding.left + innerWidth() + 5} y={y + rowHeight / 2 + 5}>
+                                            {monthNames[month.monthIndex]}
+                                        </text>
+                                    </g>
                                 </g>
                             );
                         }}
