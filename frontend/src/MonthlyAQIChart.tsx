@@ -116,18 +116,22 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
                     <For each={processedData()}>
                         {(month, i) => {
                             const y = padding.top + i() * (rowHeight + gap);
-                            const prefixCounts = month.distribution.map((bucket, idx) =>
-                                month.distribution.slice(0, idx).reduce((sum, entry) => sum + entry.count, 0)
-                            );
+                            const prefixCounts: number[] = [];
+                            let runningTotal = 0;
+                            for (const bucket of month.distribution) {
+                                prefixCounts.push(runningTotal);
+                                runningTotal += bucket.count;
+                            }
+                            const dayWidth = innerWidth() / month.daysTotal;
 
                             return (
                                 <g class={`month-row-${i()}`}>
                                     <For each={month.distribution}>
                                         {(bucket, j) => (
                                             <rect
-                                                x={padding.left + prefixCounts[j()] * (innerWidth() / month.daysTotal)}
+                                                x={padding.left + prefixCounts[j()] * dayWidth}
                                                 y={y}
-                                                width={bucket.count * (innerWidth() / month.daysTotal)}
+                                                width={bucket.count * dayWidth}
                                                 height={rowHeight}
                                                 fill={bucket.color}
                                             />
