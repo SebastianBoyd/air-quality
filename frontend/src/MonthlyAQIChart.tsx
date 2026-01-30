@@ -5,6 +5,7 @@ interface MonthlyData {
     monthIndex: number; // 0-11
     daysTotal: number;
     distribution: {
+        bucketId: number;
         color: string;
         count: number;
     }[];
@@ -29,6 +30,8 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const [dailyData] = createResource(() => props.year, fetchMonthlyData);
+    const [hoverActive, setHoverActive] = createSignal(false);
+    const [pinned, setPinned] = createSignal(false);
 
 
     const processedData = () => {
@@ -65,8 +68,10 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
 
             const distribution: MonthlyData['distribution'] = [];
             for (const key of Object.keys(counts).sort((a, b) => parseInt(b) - parseInt(a))) {
+                const bucketId = parseInt(key);
                 distribution.push({
-                    color: BucketIdToColor(parseInt(key)),
+                    bucketId,
+                    color: BucketIdToColor(bucketId),
                     count: counts[key]
                 });
             }
@@ -96,10 +101,20 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
             }
         });
         if (containerRef) observer.observe(containerRef);
-        onCleanup(() => observer.disconnect());
+        const handlePointerDown = (event: PointerEvent) => {
+            if (containerRef && !containerRef.contains(event.target as Node)) {
+                setPinned(false);
+            }
+        };
+        document.addEventListener("pointerdown", handlePointerDown);
+        onCleanup(() => {
+            observer.disconnect();
+            document.removeEventListener("pointerdown", handlePointerDown);
+        });
     });
 
     const innerWidth = () => width() - padding.left - padding.right;
+    const showCounts = () => hoverActive() || pinned();
 
     return (
         <div
@@ -108,7 +123,17 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
             style={{ width: "100%", "max-width": "600px", height: `${height}px` }}
         >
             <Show when={!dailyData.loading} fallback={<div>Loading...</div>}>
-                <svg viewBox={`0 0 ${width()} ${height}`} preserveAspectRatio="xMidYMid meet">
+                <svg
+                    viewBox={`0 0 ${width()} ${height}`}
+                    preserveAspectRatio="xMidYMid meet"
+                    onPointerEnter={() => setHoverActive(true)}
+                    onPointerLeave={() => setHoverActive(false)}
+                    onPointerDown={(event) => {
+                        if (event.pointerType === "touch") {
+                            setPinned(true);
+                        }
+                    }}
+                >
                     <text x={padding.left} y={20} class="axis-label" font-size="20" font-weight="600">
                         Y{props.year}
                     </text>
@@ -127,15 +152,33 @@ const MonthlyAQIChart: Component<MonthlyAQIChartProps> = (props) => {
                             return (
                                 <g class={`month-row-${i()}`}>
                                     <For each={month.distribution}>
-                                        {(bucket, j) => (
-                                            <rect
-                                                x={padding.left + prefixCounts[j()] * dayWidth()}
-                                                y={y}
-                                                width={bucket.count * dayWidth()}
-                                                height={rowHeight}
-                                                fill={bucket.color}
-                                            />
-                                        )}
+                                        {(bucket, j) => {
+                                            const rectX = () => padding.left + prefixCounts[j()] * dayWidth();
+                                            const rectWidth = () => bucket.count * dayWidth();
+                                            return (
+                                                <>
+                                                    <rect
+                                                        x={rectX()}
+                                                        y={y}
+                                                        width={rectWidth()}
+                                                        height={rowHeight}
+                                                        fill={bucket.color}
+                                                    />
+                                                    <Show when={showCounts() && bucket.bucketId !== 0 && bucket.count > 0}>
+                                                        <text
+                                                            x={rectX() + rectWidth() / 2}
+                                                            y={y + rowHeight / 2}
+                                                            text-anchor="middle"
+                                                            dominant-baseline="middle"
+                                                            font-size="18"
+                                                            fill="#ffffff"
+                                                        >
+                                                            {bucket.count}
+                                                        </text>
+                                                    </Show>
+                                                </>
+                                            );
+                                        }}
                                     </For>
                                     {/* Month Label */}
                                     <g class="tick">
