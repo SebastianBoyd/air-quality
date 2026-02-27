@@ -4,11 +4,11 @@ import pytz
 import sqlalchemy as sqa
 from aqi import overall_aqi
 from database import engine, sensordata
+from devices import get_all_device_ids as configured_device_ids
 
 
 def get_all_device_ids():
-    # Will be more complex when we support more devices
-    return [1, 2]
+    return configured_device_ids()
 
 async def check_last_entry_time():
     async with engine.connect() as conn:
@@ -20,7 +20,47 @@ async def check_last_entry_time():
         return None
     return latest_value[0].replace(tzinfo=timezone.utc)
 
-async def avg_sensor_data(format_string, sensordata, device_id, time_range, time_now, offset_string=None):
+async def get_latest_db_reading(device_id: str, max_age_minutes: int = 5):
+    async with engine.connect() as conn:
+        query = (
+            sqa.select(
+                sensordata.c.timestamp,
+                sensordata.c.temperature,
+                sensordata.c.humidity,
+                sensordata.c.pressure,
+                sensordata.c.pm_1_0,
+                sensordata.c.pm_2_5,
+                sensordata.c.pm_10_0,
+            )
+            .where(sensordata.c.device_id == device_id)
+            .order_by(sensordata.c.timestamp.desc())
+            .limit(1)
+        )
+        result = await conn.execute(query)
+        row = result.fetchone()
+
+    if row is None:
+        return None
+
+    timestamp = row.timestamp
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+    if (datetime.now(timezone.utc) - timestamp) > timedelta(minutes=max_age_minutes):
+        return None
+
+    return {
+        "timestamp": timestamp.isoformat(),
+        "temperature": row.temperature,
+        "humidity": row.humidity,
+        "pressure": row.pressure,
+        "pm_1_0": row.pm_1_0,
+        "pm_2_5": row.pm_2_5,
+        "pm_10_0": row.pm_10_0,
+    }
+
+
+async def avg_sensor_data(format_string, sensordata, device_id: str, time_range, time_now, offset_string=None):
     async with engine.connect() as conn:
         query = sqa.select(
                 sqa.func.strftime(format_string,
@@ -38,7 +78,7 @@ async def avg_sensor_data(format_string, sensordata, device_id, time_range, time
         
         return data
 
-async def hourly_aqi(device_id):
+async def hourly_aqi(device_id: str):
     
     timezone_name = "America/Los_Angeles"
     local_timezone = pytz.timezone(timezone_name)
@@ -68,7 +108,7 @@ async def hourly_aqi(device_id):
 
     return filled_data
 
-async def daily_aqi(device_id):
+async def daily_aqi(device_id: str):
     timezone_name = 'America/Los_Angeles'
     local_timezone = pytz.timezone(timezone_name)
     utc_offset = datetime.now(local_timezone).utcoffset()
@@ -99,7 +139,7 @@ async def daily_aqi(device_id):
 
     return filled_data
 
-async def get_monthly_data(device_id, year):
+async def get_monthly_data(device_id: str, year: int):
     timezone_name = 'America/Los_Angeles'
     local_timezone = pytz.timezone(timezone_name)
     utc_offset = datetime.now(local_timezone).utcoffset()

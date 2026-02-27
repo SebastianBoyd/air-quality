@@ -2,9 +2,10 @@ import socket
 from database import init_tables
 from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from devices import get_device_url
 from schedule import setup_jobs, stop_jobs
 from refresh_data import read_sensor
-from query import hourly_aqi, daily_aqi, get_monthly_data
+from query import hourly_aqi, daily_aqi, get_monthly_data, get_latest_db_reading
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
@@ -46,27 +47,31 @@ async def root():
 
 @router.get("/current/{device_id}")
 async def current_usage(device_id: str):
-    if device_id == "1":
-        url = "http://pacific.sebastianboyd.com:8717/json"
-    elif device_id == "2":
-        url = "http://pacific.sebastianboyd.com:8626/json"
-    else:
+    url = get_device_url(device_id)
+    if url is None:
         raise HTTPException(status_code=404, detail="device does not exist")
     return await read_sensor(url)
 
 
+@router.get("/current_snapshot/{device_id}")
+async def current_snapshot(device_id: str):
+    if get_device_url(device_id) is None:
+        raise HTTPException(status_code=404, detail="device does not exist")
+    return await get_latest_db_reading(device_id)
+
+
 @router.get("/hourly/{device_id}")
-async def hourly(device_id: int):
+async def hourly(device_id: str):
     return await hourly_aqi(device_id)
 
 
 @router.get("/daily/{device_id}")
-async def daily(device_id: int):
+async def daily(device_id: str):
     return await daily_aqi(device_id)
 
 
 @router.get("/monthly/{year}")
-async def monthly(year: int, device_id: int):
+async def monthly(year: int, device_id: str):
     return await get_monthly_data(device_id, year)
 
 

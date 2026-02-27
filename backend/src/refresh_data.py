@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import aiohttp
 import sqlalchemy as sqa
 from database import engine, sensordata
+from devices import DEVICE_URLS
 
 
 async def sensor_http_request(url, session):
@@ -30,10 +31,10 @@ async def read_sensor(url, session=None):
 
 async def refresh_all_sensors():
     async with aiohttp.ClientSession() as session:
-        await store_values("http://pacific.sebastianboyd.com:8717/json", 1, session)
-        await store_values("http://pacific.sebastianboyd.com:8626/json", 2, session)
+        for device_id, url in DEVICE_URLS.items():
+            await store_values(url, device_id, session)
 
-async def store_values(url, device_id, session):
+async def store_values(url, device_id: str, session):
     result = await read_sensor(url, session)
     if result is None:
         print("Failed to load data")

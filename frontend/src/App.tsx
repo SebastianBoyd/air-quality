@@ -1,4 +1,4 @@
-import { Component, createResource, createSignal, Show, onMount, createEffect } from 'solid-js';
+import { Component, createEffect, createResource, createSignal, onMount, Show } from 'solid-js';
 import AQIMeter from "./AQIMeter";
 import Bar from "./Bar";
 import Circles from "./Circles";
@@ -20,14 +20,53 @@ const fetcher = async (url: string) => {
     return res.json();
 };
 
+type SensorReading = {
+    pm_2_5: number | null;
+    pm_10_0: number | null;
+};
+
+const fetchCurrentReading = async (url: string): Promise<SensorReading | null> => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Fetch failed");
+    return res.json();
+};
+
+const loadCurrentData = (
+    snapshotUrl: string,
+    liveUrl: string,
+    setReading: (reading: SensorReading) => void
+) => {
+    let hasLiveReading = false;
+
+    fetchCurrentReading(snapshotUrl)
+        .then((snapshotReading) => {
+            if (snapshotReading && !hasLiveReading) {
+                setReading(snapshotReading);
+            }
+        })
+        .catch(() => { });
+
+    fetchCurrentReading(liveUrl)
+        .then((liveReading) => {
+            if (!liveReading) return;
+            hasLiveReading = true;
+            setReading(liveReading);
+        })
+        .catch(() => { });
+};
+
 const App: Component = () => {
     const [indoorEnabled, setIndoorEnabled] = createSignal<boolean>(getLocalStorageBool("indoor_enabled"));
+    const [outdoorCurrentData, setOutdoorCurrentData] = createSignal<SensorReading>();
+    const [indoorCurrentData, setIndoorCurrentData] = createSignal<SensorReading>();
 
     const urls = {
+        outdoorSnapshot: "/api/current_snapshot/1",
         outdoorCurrent: "/api/current/1",
         outdoorHourly: "/api/hourly/1",
         outdoorDaily: "/api/daily/1",
         indoorAllowed: "/api/indoor_allowed",
+        indoorSnapshot: "/api/current_snapshot/2",
         indoorCurrent: "/api/current/2",
         indoorHourly: "/api/hourly/2",
         indoorDaily: "/api/daily/2",
@@ -47,25 +86,39 @@ const App: Component = () => {
         }
     });
 
+    onMount(() => {
+        loadCurrentData(urls.outdoorSnapshot, urls.outdoorCurrent, (reading) => setOutdoorCurrentData(reading));
+    });
+
+    createEffect(() => {
+        if (indoorEnabled()) {
+            loadCurrentData(urls.indoorSnapshot, urls.indoorCurrent, (reading) => setIndoorCurrentData(reading));
+            return;
+        }
+        setIndoorCurrentData(undefined);
+    });
+
     // Outdoor Data
-    const [outdoorCurrentData] = createResource(urls.outdoorCurrent, fetcher);
     const [outdoorHourlyData] = createResource(urls.outdoorHourly, fetcher);
     const [outdoorDailyData] = createResource(urls.outdoorDaily, fetcher);
 
     // Indoor Data (Conditional)
-    const [indoorCurrentData] = createResource(() => indoorEnabled() ? urls.indoorCurrent : null, fetcher);
     const [indoorHourlyData] = createResource(() => indoorEnabled() ? urls.indoorHourly : null, fetcher);
     const [indoorDailyData] = createResource(() => indoorEnabled() ? urls.indoorDaily : null, fetcher);
 
     // Derived State
     const outdoorAqi = () => {
         const data = outdoorCurrentData();
-        return data ? OverallAQI(data.pm_2_5, data.pm_10_0) : NaN;
+        return data && data.pm_2_5 !== null && data.pm_10_0 !== null
+            ? OverallAQI(data.pm_2_5, data.pm_10_0)
+            : NaN;
     };
 
     const indoorAqi = () => {
         const data = indoorCurrentData();
-        return data ? OverallAQI(data.pm_2_5, data.pm_10_0) : NaN;
+        return data && data.pm_2_5 !== null && data.pm_10_0 !== null
+            ? OverallAQI(data.pm_2_5, data.pm_10_0)
+            : NaN;
     };
 
     return (
