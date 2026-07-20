@@ -122,7 +122,7 @@ const App: Component = () => {
     };
 
     return (
-        <div class="container">
+        <main class="container">
             <h3>Outdoor AQI</h3>
             <AQIMeter aqi={outdoorAqi()} />
 
@@ -157,7 +157,7 @@ const App: Component = () => {
 
             <h3>Monthly AQI (Outdoor)</h3>
             <MonthlyAQIChart year={new Date().getFullYear()} />
-        </div>
+        </main>
     );
 };
 

@@ -44,7 +44,7 @@ export function AQItoBucketId(AQI: number | null): number {
 
 export function BucketIdToColor(bucketIdx: number): string {
     if (bucketIdx === 0) {
-        return "#d1d1d1";
+        return AQI_LEVELS[0].color;
     }
     return AQI_LEVELS[bucketIdx].color;
 }
@@ -53,7 +53,7 @@ export function AQItoDesc(AQI: number | null): AQIDescription {
     let data = {} as AQIDescription;
     if (AQI === null || isNaN(AQI)) {
         data.text = "No Data";
-        data.color = "#d1d1d1";
+        data.color = AQI_LEVELS[0].color;
         data.percent = 0;
         return data;
     }
